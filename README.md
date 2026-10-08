@@ -1,5 +1,9 @@
 # CaseLens · Problem Statement 1 delivery
 
+## Start in GitHub Codespaces
+
+Add `GROQ_API_KEY` as a Codespaces secret with access to this repository. Create a Codespace from `codex/ps1-delivery`; dependencies install automatically. Run `bash scripts/start-codespaces.sh`, open port **8000**, and paste the terminal's eight-hour session token into **Connect to CaseLens**. Keep the forwarded port private. [Full Codespaces instructions](docs/CODESPACES.md).
+
 See [release notes and measured acceptance](docs/PS1-DELIVERY.md) before the demo.
 
 The supplied Hacknex2 programme is now the active frontend, connected to our independent review, drafting, research and RAG Chat backend modules. See [Hacknex2 integration and training notes](docs/hacknex2-integration.md).
