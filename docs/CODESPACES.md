@@ -33,7 +33,10 @@ There is no local Ollama service, GPU training environment, or separate frontend
 - Documents, database and development encryption key stay in `.data-codespaces` inside the workspace. They persist across server restarts but must be backed up before deleting the Codespace. They are ignored by Git.
 - A custom `BACKEND_ENCRYPTION_KEY` is optional. If configured, preserve it; changing it can prevent reading existing data.
 - Port already in use: stop the previous terminal task. Only one worker may own a storage directory.
-- Installation failed: run `bash scripts/setup-codespaces.sh` to retry. Do not use a Python 3.14 environment.
+- Installation failed: run `bash scripts/setup-codespaces.sh` to retry. Startup also reruns setup so a partially installed virtual environment cannot silently skip dependencies. Use Python 3.12 on Debian/glibc as specified by `.devcontainer/devcontainer.json`.
+- `onnxruntime` reports no matching distribution and pip downloads `musllinux` wheels: the active container uses musl (for example Alpine). Run **Codespaces: Rebuild Container** to apply this repository's Debian/Python 3.12 container. If `.venv` was created under the old container, rename it with `mv .venv .venv-before-rebuild` before rebuilding, then rerun setup. Preserve `.data-codespaces` and its key.
+- `Permission denied` when launching the script directly: use `bash scripts/start-codespaces.sh`.
+- Session issuance failed after an installation error: complete setup first. The session command imports backend dependencies, so this message alone does not establish a storage or encryption problem.
 - Configuration changed: use **Codespaces: Rebuild Container**. Newly added secrets require stopping and restarting the Codespace.
 - The exact forwarded HTTPS origin is configured automatically. The local `/demo/session` endpoint remains loopback-only; Codespaces uses the normal authenticated session flow.
 - This is a private development workspace. Do not expose its port publicly as a production deployment.

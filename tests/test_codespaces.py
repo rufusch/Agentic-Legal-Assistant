@@ -59,4 +59,5 @@ def test_devcontainer_paths_and_linux_line_endings():
     assert 8000 in cfg['forwardPorts']
     for name in ('scripts/setup-codespaces.sh', 'scripts/start-codespaces.sh', '.devcontainer/Dockerfile'):
         assert b'\r\n' not in (ROOT / name).read_bytes()
-    assert (ROOT / '.devcontainer' / cfg['build']['dockerfile']).is_file()
+    assert cfg['image'] == 'mcr.microsoft.com/devcontainers/python:1-3.12-bookworm'
+    assert 'build' not in cfg

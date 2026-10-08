@@ -1,6 +1,6 @@
 {
   "name": "CaseLens",
-  "build": { "dockerfile": "Dockerfile" },
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
   "remoteUser": "vscode",
   "hostRequirements": { "cpus": 2, "memory": "8gb", "storage": "32gb" },
   "forwardPorts": [8000],

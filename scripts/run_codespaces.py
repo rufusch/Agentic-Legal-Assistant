@@ -42,7 +42,13 @@ def main():
                              'issue-session', '--tenant', 'codespaces-workspace', '--hours', '8'],
                             cwd=ROOT, env=env, capture_output=True, text=True)
     if result.returncode:
-        raise SystemExit('Unable to issue a session. Stop any process using this storage and verify its encryption key. Existing data was preserved.')
+        raise SystemExit('Unable to issue a session. Dependencies may be incomplete: run '
+                         'bash scripts/setup-codespaces.sh and resolve any installation errors first. '
+                         'To inspect the underlying error, run .venv/bin/python -m backend.admin '
+                         '--storage "$BACKEND_STORAGE" issue-session --tenant codespaces-workspace --hours 8 '
+                         '(set BACKEND_STORAGE to .data-codespaces if unset). '
+                         'If dependencies are installed, check for another process owning the storage '
+                         'and verify its encryption key. Existing data was preserved.')
     token = result.stdout.strip()
     if not token:
         raise SystemExit('Session issuance returned no token; the website was not started.')
