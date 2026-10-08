@@ -1,0 +1,6 @@
+{
+  "name": "caselens-integrated-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {"test": "node tests/api-integration.test.mjs"}
+}

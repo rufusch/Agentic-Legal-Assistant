@@ -1,0 +1,120 @@
+{
+  "evaluation_version": "paired-grounding-v1",
+  "dataset_sha256": "fe8b02cbfc18eeffc9af93af56c2ddc3e1239481a6f04305f5013de5a20b4ee4",
+  "splits": [
+    "development_smoke"
+  ],
+  "baseline_arm": "baseline",
+  "proposed_arm": "verified",
+  "arms": {
+    "baseline": {
+      "queries": 1,
+      "claims": 1,
+      "quote_traceability": 1.0,
+      "semantic_groundedness": null,
+      "answer_coverage": 1.0,
+      "invalid_citations": 0,
+      "material_value_failures": 0,
+      "mean_retrieval_recall": 1.0,
+      "rows": [
+        {
+          "id": "release-chat",
+          "claim_count": 1,
+          "traceable_claims": 1,
+          "traceability": 1.0,
+          "invalid_citations": 0,
+          "material_value_failures": 0,
+          "semantic_groundedness": null,
+          "unjudged_claims": 1,
+          "retrieval_recall": 1.0,
+          "retrieval_precision": 1.0,
+          "answered": true,
+          "answerable": true,
+          "abstention_correct": null,
+          "usefulness_human_score": null
+        }
+      ]
+    },
+    "numeric_guard_only": {
+      "queries": 1,
+      "claims": 1,
+      "quote_traceability": 1.0,
+      "semantic_groundedness": null,
+      "answer_coverage": 1.0,
+      "invalid_citations": 0,
+      "material_value_failures": 0,
+      "mean_retrieval_recall": 1.0,
+      "rows": [
+        {
+          "id": "release-chat",
+          "claim_count": 1,
+          "traceable_claims": 1,
+          "traceability": 1.0,
+          "invalid_citations": 0,
+          "material_value_failures": 0,
+          "semantic_groundedness": null,
+          "unjudged_claims": 1,
+          "retrieval_recall": 1.0,
+          "retrieval_precision": 1.0,
+          "answered": true,
+          "answerable": true,
+          "abstention_correct": null,
+          "usefulness_human_score": null
+        }
+      ]
+    },
+    "verified": {
+      "queries": 1,
+      "claims": 0,
+      "quote_traceability": null,
+      "semantic_groundedness": null,
+      "answer_coverage": 0.0,
+      "invalid_citations": 0,
+      "material_value_failures": 0,
+      "mean_retrieval_recall": 1.0,
+      "rows": [
+        {
+          "id": "release-chat",
+          "claim_count": 0,
+          "traceable_claims": 0,
+          "traceability": null,
+          "invalid_citations": 0,
+          "material_value_failures": 0,
+          "semantic_groundedness": null,
+          "unjudged_claims": 0,
+          "retrieval_recall": 1.0,
+          "retrieval_precision": 1.0,
+          "answered": false,
+          "answerable": true,
+          "abstention_correct": null,
+          "usefulness_human_score": null
+        }
+      ]
+    }
+  },
+  "traceability_delta": null,
+  "qualification_claim": "Not established automatically. Strong baseline selection, held-out independence, semantic support and usefulness require independent review.",
+  "limitations": [
+    "Valid source spans do not prove entailment.",
+    "Synthetic fault injection is not a real-model baseline benchmark.",
+    "Do not fine-tune or tune prompts on held-out query answers."
+  ],
+  "model": {
+    "id": "leximind-review",
+    "workflow": "review",
+    "version": "qwen3:4b-instruct",
+    "kind": "local_llm",
+    "provider": "ollama",
+    "available": true,
+    "trainable": true,
+    "output_schema": "review-report-v2",
+    "prompt_version": "review-reasoning-v1",
+    "verification_version": "quoted-spans-plus-model-check-v1",
+    "destination": "local machine",
+    "deployment": "local"
+  },
+  "baseline_kind": "Single-pass schema-constrained RAG using the same deployed base model.",
+  "baseline_elapsed_seconds": 21.95,
+  "frontier_baseline_tested": false,
+  "held_out_judging_data_tested": false
+}

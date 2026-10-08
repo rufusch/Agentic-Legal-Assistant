@@ -1,0 +1,47 @@
+services:
+  backend:
+    build: .
+    ports: ["8000:8000"]
+    environment:
+      BACKEND_ENCRYPTION_KEY: ${BACKEND_ENCRYPTION_KEY:?Set a Fernet encryption key in .env}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:5173}
+      LEXIMIND_MODEL_DEPLOYMENT: cloud
+      LEXIMIND_REVIEW_BASE_URL: http://model:11434
+      LEXIMIND_MODEL_ALLOW_HTTP: "1"
+      LEXIMIND_REVIEW_LLM_MODEL: ${REVIEW_MODEL:-qwen3:4b-instruct}
+      LEXIMIND_DRAFTING_LLM_MODEL: ${DRAFTING_MODEL:-qwen3:4b-instruct}
+      LEXIMIND_RESEARCH_LLM_MODEL: ${RESEARCH_MODEL:-qwen3:4b-instruct}
+      LEXIMIND_CHAT_LLM_MODEL: ${CHAT_MODEL:-qwen3:4b-instruct}
+    volumes: ["backend-data:/data"]
+    depends_on:
+      model-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+  model:
+    image: ollama/ollama:0.40.1
+    environment:
+      OLLAMA_NO_CLOUD: "1"
+      OLLAMA_NUM_PARALLEL: "1"
+    volumes: ["model-data:/root/.ollama"]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+  model-init:
+    image: ollama/ollama:0.40.1
+    environment:
+      OLLAMA_HOST: http://model:11434
+      REVIEW_MODEL: ${REVIEW_MODEL:-qwen3:4b-instruct}
+      DRAFTING_MODEL: ${DRAFTING_MODEL:-qwen3:4b-instruct}
+      RESEARCH_MODEL: ${RESEARCH_MODEL:-qwen3:4b-instruct}
+      CHAT_MODEL: ${CHAT_MODEL:-qwen3:4b-instruct}
+    entrypoint: ["/bin/sh", "-c"]
+    command: ['ollama pull "$${REVIEW_MODEL}" && ollama pull "$${DRAFTING_MODEL}" && ollama pull "$${RESEARCH_MODEL}" && ollama pull "$${CHAT_MODEL}"']
+    depends_on:
+      model:
+        condition: service_healthy
+volumes:
+  backend-data:
+  model-data:

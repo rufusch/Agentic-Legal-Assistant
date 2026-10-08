@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+const source=await readFile(new URL('./workflow-adapters.js',import.meta.url),'utf8');
+const {createWorkflowAdapters}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const calls=[];const adapter=createWorkflowAdapters({json:async(path,options)=>{calls.push({path,...options});return {job_id:'job'};}});
+await adapter.analyzeRequirements({documentType:'Anticipatory Bail Application',jurisdiction:'India — Maharashtra (IN-MH)',court:'High Court of Bombay',instructions:'Prepare a grounded application.',supportingDocumentIds:['a','a']});
+assert.equal(calls[0].body.jurisdiction,'IN-MH');assert.equal(calls[0].body.document_type,'Anticipatory Bail Application');assert.deepEqual(calls[0].body.supporting_document_ids,['a']);
+await adapter.runResearch({question:'What precedents apply?',jurisdictionOrCourt:'Supreme Court',contextDocumentIds:['b']});
+assert.equal(calls[1].path,'research');assert.deepEqual(calls[1].body.filters.courts,['Supreme Court of India']);
+await adapter.runResearch({question:'What precedents apply?',jurisdictionOrCourt:'IN-MH'});
+assert.deepEqual(calls[2].body.filters.jurisdictions,['IN-MH']);assert.deepEqual(calls[2].body.filters.courts,[]);
+await adapter.runResearch({question:'What precedents apply?'});
+assert.deepEqual(calls[3].body.filters.jurisdictions,[]);assert.deepEqual(calls[3].body.context_document_ids,[]);
+await adapter.generateDraft('id',['gap']);assert.equal(calls[4].body.proceed_with_missing_information,true);
+console.log('Screenshot workflow adapter checks passed.');

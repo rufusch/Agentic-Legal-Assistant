@@ -1,0 +1,3 @@
+{"id": "release-chat", "arm": "baseline", "retrieved_source_ids": ["E1"], "claims": [{"text": "The buyer must pay the supplier.", "citations": [{"source_id": "E1", "quote": "SYNTHETIC TEST CONTRACT. Example Buyer must pay Example Supplier INR 5000 within ten days of invoice."}]}]}
+{"id": "release-chat", "arm": "verified", "retrieved_source_ids": ["E1"], "claims": []}
+{"id": "release-chat", "arm": "numeric_guard_only", "retrieved_source_ids": ["E1"], "claims": [{"text": "The buyer must pay the supplier.", "citations": [{"source_id": "E1", "quote": "SYNTHETIC TEST CONTRACT. Example Buyer must pay Example Supplier INR 5000 within ten days of invoice."}]}]}

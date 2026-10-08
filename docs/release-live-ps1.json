@@ -1,0 +1,724 @@
+{
+  "fixture": "Synthetic acceptance data; not legal authority.",
+  "started_at": 1791465673.1353278,
+  "workflows": {
+    "chat": {
+      "elapsed_seconds": 1123.61,
+      "job": {
+        "id": "ae3f8a83-2a51-4ae9-b851-1a881bbfd6f5",
+        "workflow": "chat",
+        "resource_id": "223db232-a6f3-4e4c-930b-afce75597c2e",
+        "status": "failed",
+        "progress": 0.7,
+        "created_at": "2026-10-08T13:21:15.896771+00:00",
+        "result_id": null,
+        "warnings": [],
+        "failure": {
+          "code": "MODEL_UNAVAILABLE",
+          "message": "Cannot reach the configured model. Start Ollama or LM Studio and load the configured model.",
+          "retryable": true
+        }
+      },
+      "result": {
+        "id": "223db232-a6f3-4e4c-930b-afce75597c2e",
+        "conversation_id": "ed6b2692-b640-4da7-b3d9-c207b6fed7c3",
+        "created_at": "2026-10-08T13:21:15.896771+00:00",
+        "source_document_ids": [
+          "aa8a7744-4e9b-4d99-b0b7-a2ad84b4f394"
+        ],
+        "claims": [],
+        "citations": [],
+        "warnings": [],
+        "failure": {
+          "code": "MODEL_UNAVAILABLE",
+          "message": "Cannot reach the configured model. Start Ollama or LM Studio and load the configured model.",
+          "retryable": true
+        },
+        "role": "assistant",
+        "content": "",
+        "question": "Who must pay whom? Return one concise supported statement only.",
+        "status": "failed",
+        "job_id": "ae3f8a83-2a51-4ae9-b851-1a881bbfd6f5",
+        "model": {
+          "id": "leximind-chat",
+          "workflow": "chat",
+          "version": "qwen3:4b-instruct",
+          "kind": "local_llm",
+          "provider": "ollama",
+          "available": true,
+          "trainable": true,
+          "output_schema": "grounded-chat-v1",
+          "prompt_version": "grounded-chat-v1",
+          "verification_version": "quoted-spans-plus-model-check-v1",
+          "destination": "local machine",
+          "deployment": "local"
+        },
+        "verification": {
+          "same_model": true,
+          "items": []
+        },
+        "retrieval": {
+          "chunk_ids": [
+            "568f40e6-c71b-435d-b35c-44736f6ba645"
+          ],
+          "context_characters": 102
+        }
+      }
+    },
+    "review": {
+      "elapsed_seconds": 284.48,
+      "job": {
+        "id": "daa66d26-eba4-4dec-b6cd-0d83eb8b1577",
+        "workflow": "review",
+        "resource_id": "1ee321a0-5018-452f-9988-85a8103abfd0",
+        "status": "completed_with_warnings",
+        "progress": 1,
+        "created_at": "2026-10-08T13:39:59.510919+00:00",
+        "result_id": "1ee321a0-5018-452f-9988-85a8103abfd0",
+        "warnings": [
+          {
+            "id": "ca2be697-20ce-4786-a625-17fec6a09bd9",
+            "type": "partial_processing",
+            "severity": "info",
+            "title": "Model-assisted analysis requires review",
+            "message": "Source quotes and offsets were checked in code. Interpretations were checked by a second pass of the same local model, which can repeat errors. Findings are not a certified legal opinion and coverage may be incomplete.",
+            "related_claim_ids": [],
+            "citation_ids": [],
+            "resolvable": false
+          }
+        ],
+        "failure": null
+      },
+      "result": {
+        "id": "1ee321a0-5018-452f-9988-85a8103abfd0",
+        "status": "completed_with_warnings",
+        "focus_question": "Identify the payment obligation. Keep one key fact, one evidence item and one overview. Leave all other lists empty unless necessary.",
+        "key_facts": [
+          {
+            "id": "01494aef-ef1a-4016-b57f-d7d60f07c416",
+            "label": "Payment obligation",
+            "value": "Buyer must pay Supplier INR 5000 within ten days of invoice.",
+            "claim_id": "b8e3e758-c726-4a80-b5c8-7cc90c0eb3d8",
+            "citation_ids": [
+              "2306cc4b-5aa7-4b53-81a8-862629da84bb"
+            ],
+            "assertion_type": "finding"
+          }
+        ],
+        "contradictions": [],
+        "missing_information": [],
+        "relevant_evidence": [
+          {
+            "id": "d0fb85a1-583c-48f4-b957-d307f01e10f7",
+            "title": "Payment term in contract",
+            "summary": "Example Buyer must pay Example Supplier INR 5000 within ten days of invoice.",
+            "category": "fact",
+            "citation_ids": [
+              "2306cc4b-5aa7-4b53-81a8-862629da84bb"
+            ]
+          }
+        ],
+        "risk_summary": {
+          "overall": "undetermined",
+          "rationale": "Priority reflects model-identified concerns in supplied evidence, not an enforceability determination or predicted outcome.",
+          "items": []
+        },
+        "claims": [
+          {
+            "id": "b8e3e758-c726-4a80-b5c8-7cc90c0eb3d8",
+            "text": "Buyer must pay Supplier INR 5000 within ten days of invoice.",
+            "citation_ids": [
+              "2306cc4b-5aa7-4b53-81a8-862629da84bb"
+            ],
+            "verification_status": "partially_supported",
+            "confidence": 0.6,
+            "warning": "Model interpretation checked against quoted evidence; not independently certified legal truth."
+          }
+        ],
+        "citations": [
+          {
+            "id": "2306cc4b-5aa7-4b53-81a8-862629da84bb",
+            "label": "S1",
+            "document_id": "aa8a7744-4e9b-4d99-b0b7-a2ad84b4f394",
+            "document_name": "release-contract.txt",
+            "chunk_id": "568f40e6-c71b-435d-b35c-44736f6ba645",
+            "quoted_text": "SYNTHETIC TEST CONTRACT. Example Buyer must pay Example Supplier INR 5000 within ten days of invoice.",
+            "page": 1,
+            "section": null,
+            "paragraph": null,
+            "start_offset": 0,
+            "end_offset": 101,
+            "source_url": null,
+            "jurisdiction": "IN",
+            "court": null,
+            "decided_at": null
+          }
+        ],
+        "warnings": [
+          {
+            "id": "ca2be697-20ce-4786-a625-17fec6a09bd9",
+            "type": "partial_processing",
+            "severity": "info",
+            "title": "Model-assisted analysis requires review",
+            "message": "Source quotes and offsets were checked in code. Interpretations were checked by a second pass of the same local model, which can repeat errors. Findings are not a certified legal opinion and coverage may be incomplete.",
+            "related_claim_ids": [],
+            "citation_ids": [],
+            "resolvable": false
+          }
+        ],
+        "confidence": {
+          "score": 0.6,
+          "level": "medium",
+          "explanation": "Source anchoring was checked mechanically; analytical support was checked by the same local LLM and still requires human assessment."
+        },
+        "source_document_ids": [
+          "aa8a7744-4e9b-4d99-b0b7-a2ad84b4f394"
+        ],
+        "created_at": "2026-10-08T13:39:59.510919+00:00",
+        "options": {
+          "compare_with_governing_law": false,
+          "risk_tolerance": "balanced",
+          "jurisdiction": null,
+          "as_of_date": null,
+          "authority_document_ids": []
+        },
+        "model": {
+          "id": "leximind-review",
+          "workflow": "review",
+          "version": "qwen3:4b-instruct",
+          "kind": "local_llm",
+          "provider": "ollama",
+          "available": true,
+          "trainable": true,
+          "output_schema": "review-report-v2",
+          "prompt_version": "review-reasoning-v1",
+          "verification_version": "quoted-spans-plus-model-check-v1",
+          "destination": "local machine",
+          "deployment": "local",
+          "requested_version": "qwen3:4b-instruct",
+          "artifact_digest": "0edcdef34593eac1aa2be9c7d06c432dcf81945adca5eca2f27662c18f168ba0"
+        },
+        "version": 1,
+        "root_review_id": "1ee321a0-5018-452f-9988-85a8103abfd0",
+        "previous_review_id": null,
+        "authority_coverage": [],
+        "job_id": "daa66d26-eba4-4dec-b6cd-0d83eb8b1577",
+        "failure": null,
+        "overview": {
+          "id": "f2e25a26-58b7-4383-a433-999794fe3b67",
+          "text": "The payment obligation is for INR 5000, due within ten days of invoice issuance, as specified in the synthetic test contract.",
+          "citation_ids": [
+            "2306cc4b-5aa7-4b53-81a8-862629da84bb"
+          ]
+        },
+        "timeline": [],
+        "document_kind": "contract",
+        "coverage": {
+          "total_source_chunks": 1,
+          "analyzed_source_chunks": 1,
+          "source_characters": 102,
+          "packets": 1,
+          "cross_packet_synthesis": true,
+          "parser_versions": [
+            "sources-v2"
+          ],
+          "source_hashes": {
+            "aa8a7744-4e9b-4d99-b0b7-a2ad84b4f394": "8daf0502c10e58665f4c10ef076d9ba2682f26334e1cac482ad17ed7896cf3e7"
+          },
+          "prompt_sha256": "34022db0c9141fd489428447584fa099fd40b6825f1b17c07bed1f89dc88390d"
+        },
+        "verification": {
+          "method": "exact_source_spans_and_second_llm_pass",
+          "same_model": true,
+          "items": [
+            {
+              "item_id": "f2e25a26-58b7-4383-a433-999794fe3b67",
+              "supported": true,
+              "reason": "The proposal correctly states the payment obligation of INR 5000 due within ten days of invoice issuance, as directly supported by the quote in the synthetic test contract."
+            },
+            {
+              "item_id": "b8e3e758-c726-4a80-b5c8-7cc90c0eb3d8",
+              "supported": true,
+              "reason": "The finding that 'Buyer must pay Supplier INR 5000 within ten days of invoice' is a direct and accurate restatement of the quoted term, with no factual distortion or omission."
+            },
+            {
+              "item_id": "d0fb85a1-583c-48f4-b957-d307f01e10f7",
+              "supported": true,
+              "reason": "The evidence correctly extracts and presents the payment term from the synthetic test contract, with precise alignment to the quoted text."
+            }
+          ]
+        }
+      }
+    },
+    "drafting": {
+      "elapsed_seconds": 111.0,
+      "job": {
+        "id": "e5574f2c-91fa-4cb6-a72d-064247fa1afc",
+        "workflow": "drafting",
+        "resource_id": "fa331ef1-b8e6-4d74-84a4-1545cb09dbcb",
+        "phase": "generate",
+        "status": "failed",
+        "progress": 0.35,
+        "created_at": "2026-10-08T13:44:44.091489+00:00",
+        "result_id": null,
+        "warnings": [],
+        "failure": {
+          "code": "MODEL_INVALID_OUTPUT",
+          "message": "Draft contained an unchecked section heading.",
+          "retryable": true
+        }
+      },
+      "result": {
+        "document_type": "contract_clause",
+        "jurisdiction": "IN",
+        "court": null,
+        "instructions": "Write one short payment clause with one section and one paragraph only. No background, grounds, relief, verification, signature, schedule or notice sections. Use only the supplied facts.",
+        "facts": {
+          "parties": "Example Buyer and Example Supplier",
+          "clause_purpose": "Payment",
+          "obligations": "Example Buyer must pay Example Supplier INR 5000 within ten days of invoice.",
+          "effective_date": "When an invoice is issued."
+        },
+        "supporting_document_ids": [
+          "aa8a7744-4e9b-4d99-b0b7-a2ad84b4f394"
+        ],
+        "preferences": {
+          "language": "en",
+          "tone": "formal",
+          "include_alternative_clauses": false
+        },
+        "id": "fa331ef1-b8e6-4d74-84a4-1545cb09dbcb",
+        "status": "failed",
+        "title": "Contract Clause",
+        "created_at": "2026-10-08T13:44:44.008663+00:00",
+        "version": 2,
+        "requirements": [
+          {
+            "id": "ff9c4b17-40ae-4fb4-88a0-f3b0b08082c0",
+            "key": "jurisdiction",
+            "question": "Applicable jurisdiction",
+            "rationale": "Needed to produce a specific draft without inventing information. This intake template is not a certified jurisdictional filing checklist.",
+            "required": true,
+            "answer_type": "short_text",
+            "current_answer": "IN",
+            "source": "template"
+          },
+          {
+            "id": "e9cbd4f1-823d-4bfd-8a1a-3d9282775fd3",
+            "key": "instructions",
+            "question": "What should the draft achieve?",
+            "rationale": "Needed to produce a specific draft without inventing information. This intake template is not a certified jurisdictional filing checklist.",
+            "required": true,
+            "answer_type": "long_text",
+            "current_answer": "Write one short payment clause with one section and one paragraph only. No background, grounds, relief, verification, signature, schedule or notice sections. Use only the supplied facts.",
+            "source": "template"
+          },
+          {
+            "id": "cc944354-5466-4b13-84a2-06a6b8947f55",
+            "key": "parties",
+            "question": "Parties and their roles",
+            "rationale": "Needed to produce a specific draft without inventing information. This intake template is not a certified jurisdictional filing checklist.",
+            "required": false,
+            "answer_type": "short_text",
+            "current_answer": "Example Buyer and Example Supplier",
+            "source": "template"
+          },
+          {
+            "id": "302049ba-ae2a-401b-a601-02b1aee1ecea",
+            "key": "clause_purpose",
+            "question": "Purpose of the clause",
+            "rationale": "Needed to produce a specific draft without inventing information. This intake template is not a certified jurisdictional filing checklist.",
+            "required": false,
+            "answer_type": "short_text",
+            "current_answer": "Payment",
+            "source": "template"
+          },
+          {
+            "id": "82f56ed2-82cf-4a6a-af08-b7e646ee2906",
+            "key": "obligations",
+            "question": "Agreed obligations and exceptions",
+            "rationale": "Needed to produce a specific draft without inventing information. This intake template is not a certified jurisdictional filing checklist.",
+            "required": false,
+            "answer_type": "long_text",
+            "current_answer": "Example Buyer must pay Example Supplier INR 5000 within ten days of invoice.",
+            "source": "template"
+          },
+          {
+            "id": "1fc1e3f0-7477-436a-bf17-070e287d093d",
+            "key": "effective_date",
+            "question": "Effective date or triggering conditions",
+            "rationale": "Needed to produce a specific draft without inventing information. This intake template is not a certified jurisdictional filing checklist.",
+            "required": false,
+            "answer_type": "short_text",
+            "current_answer": "When an invoice is issued.",
+            "source": "template"
+          }
+        ],
+        "sections": [],
+        "unresolved_placeholders": [],
+        "authorities": [],
+        "claims": [],
+        "citations": [],
+        "warnings": [],
+        "source_document_ids": [
+          "aa8a7744-4e9b-4d99-b0b7-a2ad84b4f394",
+          "de35057d-e4a9-4e21-b643-8da7e07d13fa"
+        ],
+        "confidence": {
+          "score": 0,
+          "level": "unavailable",
+          "explanation": "Draft not generated."
+        },
+        "model": {
+          "id": "leximind-drafting",
+          "workflow": "drafting",
+          "version": "qwen3:4b-instruct",
+          "kind": "local_llm",
+          "provider": "ollama",
+          "available": true,
+          "trainable": true,
+          "output_schema": "legal-draft-v1",
+          "prompt_version": "grounded-drafting-v1",
+          "verification_version": "quoted-spans-plus-model-check-v1",
+          "destination": "local machine",
+          "deployment": "local"
+        },
+        "failure": {
+          "code": "MODEL_INVALID_OUTPUT",
+          "message": "Draft contained an unchecked section heading.",
+          "retryable": true
+        },
+        "needs_verification": false,
+        "verification": {},
+        "retrieval": {
+          "method": "bm25-lsa-rrf-v1",
+          "case_chunks_available": 1,
+          "authority_chunks_available": 0,
+          "selected_evidence_chunks": 2,
+          "selected_authority_chunks": 0,
+          "style_examples": 0,
+          "context_characters": 687,
+          "scope": "Relevant excerpts from selected case sources and jurisdiction-filtered tenant authorities. Style examples are not factual or legal evidence. No external legal database."
+        },
+        "context_document_id": "de35057d-e4a9-4e21-b643-8da7e07d13fa",
+        "acknowledged_requirement_ids": [],
+        "job_id": "e5574f2c-91fa-4cb6-a72d-064247fa1afc"
+      }
+    },
+    "research": {
+      "elapsed_seconds": 2.08,
+      "job": {
+        "id": "57e3d5cb-61cf-4735-b50b-1f742b41f137",
+        "workflow": "research",
+        "resource_id": "1446f7e7-a964-4924-9af0-e968ca116944",
+        "status": "completed_with_warnings",
+        "progress": 1,
+        "created_at": "2026-10-08T13:46:35.017516+00:00",
+        "result_id": "1446f7e7-a964-4924-9af0-e968ca116944",
+        "warnings": [
+          {
+            "id": "3d49b251-326f-4f46-8cf0-7f7203477d3e",
+            "type": "weak_authority",
+            "severity": "warning",
+            "title": "Research coverage limits",
+            "message": "Only ready sources in this workspace were searched; no external legal database was queried. Authority currency, treatment and binding status have not been certified. Retrieval selects bounded excerpts and may miss relevant material. Upload relevant statutes or judgments before requesting a substantive legal answer.",
+            "related_claim_ids": [],
+            "citation_ids": [],
+            "resolvable": false
+          }
+        ],
+        "failure": null
+      },
+      "result": {
+        "id": "1446f7e7-a964-4924-9af0-e968ca116944",
+        "question": "What statute certifies enforceability of this synthetic contract?",
+        "context_document_ids": [
+          "aa8a7744-4e9b-4d99-b0b7-a2ad84b4f394"
+        ],
+        "filters": {
+          "jurisdictions": [],
+          "courts": [],
+          "date_from": null,
+          "date_to": null,
+          "source_types": [
+            "statute",
+            "judgment"
+          ]
+        },
+        "options": {
+          "include_secondary_sources": false,
+          "connect_to_case_facts": true,
+          "depth": "standard"
+        },
+        "status": "completed_with_warnings",
+        "parent_id": null,
+        "version": 1,
+        "created_at": "2026-10-08T13:46:35.017516+00:00",
+        "model": {
+          "id": "leximind-research",
+          "workflow": "research",
+          "version": "qwen3:4b-instruct",
+          "kind": "local_llm",
+          "provider": "ollama",
+          "available": true,
+          "trainable": true,
+          "output_schema": "research-memo-v1",
+          "prompt_version": "grounded-research-v1",
+          "verification_version": "quoted-spans-plus-model-check-v1",
+          "destination": "local machine",
+          "deployment": "local"
+        },
+        "source_document_ids": [
+          "aa8a7744-4e9b-4d99-b0b7-a2ad84b4f394"
+        ],
+        "job_id": "57e3d5cb-61cf-4735-b50b-1f742b41f137",
+        "failure": null,
+        "scope": {
+          "interpreted_question": "What statute certifies enforceability of this synthetic contract?",
+          "assumptions": [
+            "Jurisdiction is unrestricted unless filters are provided."
+          ],
+          "jurisdictions": [],
+          "as_of_date": "2026-10-08"
+        },
+        "search_log": [
+          {
+            "id": "4f365744-7c66-4559-a646-0f9895e8119a",
+            "question": "Governing statutes: What statute certifies enforceability of this synthetic contract?",
+            "status": "limited_evidence",
+            "filters": {
+              "jurisdictions": [],
+              "courts": [],
+              "date_from": null,
+              "date_to": null,
+              "source_types": [
+                "statute",
+                "judgment"
+              ]
+            },
+            "candidate_chunks": 0,
+            "retrieved_chunk_ids": [],
+            "source_document_ids": []
+          },
+          {
+            "id": "0a561d1c-caff-423a-bd3c-af8c3dace5ec",
+            "question": "Precedents: What statute certifies enforceability of this synthetic contract?",
+            "status": "limited_evidence",
+            "filters": {
+              "jurisdictions": [],
+              "courts": [],
+              "date_from": null,
+              "date_to": null,
+              "source_types": [
+                "statute",
+                "judgment"
+              ]
+            },
+            "candidate_chunks": 0,
+            "retrieved_chunk_ids": [],
+            "source_document_ids": []
+          },
+          {
+            "id": "ed7f096d-87aa-4966-ae95-99c5224772dd",
+            "question": "Secondary commentary: What statute certifies enforceability of this synthetic contract?",
+            "status": "limited_evidence",
+            "filters": {
+              "jurisdictions": [],
+              "courts": [],
+              "date_from": null,
+              "date_to": null,
+              "source_types": [
+                "statute",
+                "judgment"
+              ]
+            },
+            "candidate_chunks": 0,
+            "retrieved_chunk_ids": [],
+            "source_document_ids": []
+          },
+          {
+            "id": "2d392b0e-16fe-45ac-85c0-8d067ed9dfbb",
+            "question": "Case context: What statute certifies enforceability of this synthetic contract?",
+            "status": "completed",
+            "filters": {
+              "jurisdictions": [],
+              "courts": [],
+              "date_from": null,
+              "date_to": null,
+              "source_types": [
+                "statute",
+                "judgment"
+              ]
+            },
+            "candidate_chunks": 1,
+            "retrieved_chunk_ids": [
+              "568f40e6-c71b-435d-b35c-44736f6ba645"
+            ],
+            "source_document_ids": [
+              "aa8a7744-4e9b-4d99-b0b7-a2ad84b4f394"
+            ]
+          }
+        ],
+        "sub_queries": [
+          {
+            "id": "4f365744-7c66-4559-a646-0f9895e8119a",
+            "question": "Governing statutes: What statute certifies enforceability of this synthetic contract?",
+            "status": "limited_evidence"
+          },
+          {
+            "id": "0a561d1c-caff-423a-bd3c-af8c3dace5ec",
+            "question": "Precedents: What statute certifies enforceability of this synthetic contract?",
+            "status": "limited_evidence"
+          },
+          {
+            "id": "ed7f096d-87aa-4966-ae95-99c5224772dd",
+            "question": "Secondary commentary: What statute certifies enforceability of this synthetic contract?",
+            "status": "limited_evidence"
+          },
+          {
+            "id": "2d392b0e-16fe-45ac-85c0-8d067ed9dfbb",
+            "question": "Case context: What statute certifies enforceability of this synthetic contract?",
+            "status": "completed"
+          }
+        ],
+        "retrieval": {
+          "context_characters": 102,
+          "excluded_by_filters": 0,
+          "method": "bm25-lsa-rrf-v1",
+          "maximum_context_characters": 24000
+        },
+        "executive_summary": {
+          "text": "Insufficient supplied authority to answer this question.",
+          "claim_ids": [],
+          "citation_ids": []
+        },
+        "legal_framework": [],
+        "key_authorities": [],
+        "application_to_facts": [],
+        "conflicting_authorities": [],
+        "claims": [],
+        "citations": [],
+        "warnings": [
+          {
+            "id": "3d49b251-326f-4f46-8cf0-7f7203477d3e",
+            "type": "weak_authority",
+            "severity": "warning",
+            "title": "Research coverage limits",
+            "message": "Only ready sources in this workspace were searched; no external legal database was queried. Authority currency, treatment and binding status have not been certified. Retrieval selects bounded excerpts and may miss relevant material. Upload relevant statutes or judgments before requesting a substantive legal answer.",
+            "related_claim_ids": [],
+            "citation_ids": [],
+            "resolvable": false
+          }
+        ],
+        "limitations": [
+          "Only ready sources in this workspace were searched; no external legal database was queried.",
+          "Authority currency, treatment and binding status have not been certified.",
+          "Retrieval selects bounded excerpts and may miss relevant material.",
+          "Upload relevant statutes or judgments before requesting a substantive legal answer."
+        ],
+        "confidence": {
+          "score": 0.0,
+          "level": "unavailable",
+          "explanation": "No verified research propositions."
+        },
+        "verification": {
+          "method": "source-only model synthesis and support check",
+          "same_model": true,
+          "items": []
+        }
+      }
+    }
+  },
+  "models": [
+    {
+      "id": "leximind-review",
+      "workflow": "review",
+      "version": "qwen3:4b-instruct",
+      "kind": "local_llm",
+      "provider": "ollama",
+      "available": true,
+      "trainable": true,
+      "output_schema": "review-report-v2",
+      "prompt_version": "review-reasoning-v1",
+      "verification_version": "quoted-spans-plus-model-check-v1",
+      "destination": "local machine",
+      "deployment": "local",
+      "topic_classifier": {
+        "id": "leximind-review",
+        "workflow": "review",
+        "version": "extractive-baseline-v1",
+        "kind": "extractive_rules",
+        "available": true,
+        "trainable": true,
+        "labels": [
+          "payment",
+          "termination",
+          "parties",
+          "governing_law",
+          "missing_material",
+          "other"
+        ],
+        "output_schema": "review-report-v1"
+      }
+    },
+    {
+      "id": "leximind-drafting",
+      "workflow": "drafting",
+      "version": "qwen3:4b-instruct",
+      "kind": "local_llm",
+      "provider": "ollama",
+      "available": true,
+      "trainable": true,
+      "output_schema": "legal-draft-v1",
+      "prompt_version": "grounded-drafting-v1",
+      "verification_version": "quoted-spans-plus-model-check-v1",
+      "destination": "local machine",
+      "deployment": "local"
+    },
+    {
+      "id": "leximind-research",
+      "workflow": "research",
+      "version": "qwen3:4b-instruct",
+      "kind": "local_llm",
+      "provider": "ollama",
+      "available": true,
+      "trainable": true,
+      "output_schema": "research-memo-v1",
+      "prompt_version": "grounded-research-v1",
+      "verification_version": "quoted-spans-plus-model-check-v1",
+      "destination": "local machine",
+      "deployment": "local"
+    },
+    {
+      "id": "leximind-chat",
+      "workflow": "chat",
+      "version": "qwen3:4b-instruct",
+      "kind": "local_llm",
+      "provider": "ollama",
+      "available": true,
+      "trainable": true,
+      "output_schema": "grounded-chat-v1",
+      "prompt_version": "grounded-chat-v1",
+      "verification_version": "quoted-spans-plus-model-check-v1",
+      "destination": "local machine",
+      "deployment": "local"
+    },
+    {
+      "id": "leximind-novelty",
+      "workflow": "novelty",
+      "version": "not-implemented",
+      "kind": "reserved",
+      "available": false,
+      "trainable": true,
+      "labels": [
+        "task",
+        "evidence",
+        "clarification",
+        "other"
+      ],
+      "output_schema": "novelty-v1"
+    }
+  ],
+  "source_sha256": "8daf0502c10e58665f4c10ef076d9ba2682f26334e1cac482ad17ed7896cf3e7",
+  "finished_at": 1791467197.1292572
+}

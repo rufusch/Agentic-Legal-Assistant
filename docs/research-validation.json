@@ -1,0 +1,13 @@
+{
+  "backend_tests_passed": 66,
+  "frontend_checks": [
+    "api-client.test.mjs",
+    "workflow-adapters.test.mjs",
+    "research.js syntax"
+  ],
+  "live_preview": "http://127.0.0.1:8000/",
+  "live_result": "completed_with_warnings: correctly abstained with no workspace authority",
+  "model_quality_validation": "Research synthesis tested with mock model; no substantive real-model research run",
+  "cloud_validation": "Docker build and legacy DOC binary extraction not run in this environment",
+  "antigravity_wiring": "Source folder requested; screenshot field mappings verified"
+}

@@ -1,0 +1,3270 @@
+{
+  "CreateResearch": {
+    "$defs": {
+      "Filters": {
+        "additionalProperties": false,
+        "properties": {
+          "jurisdictions": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Jurisdictions",
+            "type": "array"
+          },
+          "courts": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Courts",
+            "type": "array"
+          },
+          "date_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Date From"
+          },
+          "date_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Date To"
+          },
+          "source_types": {
+            "items": {
+              "enum": [
+                "statute",
+                "judgment",
+                "secondary"
+              ],
+              "type": "string"
+            },
+            "title": "Source Types",
+            "type": "array"
+          }
+        },
+        "title": "Filters",
+        "type": "object"
+      },
+      "Options": {
+        "additionalProperties": false,
+        "properties": {
+          "include_secondary_sources": {
+            "default": false,
+            "title": "Include Secondary Sources",
+            "type": "boolean"
+          },
+          "connect_to_case_facts": {
+            "default": true,
+            "title": "Connect To Case Facts",
+            "type": "boolean"
+          },
+          "depth": {
+            "default": "standard",
+            "enum": [
+              "standard",
+              "deep"
+            ],
+            "title": "Depth",
+            "type": "string"
+          }
+        },
+        "title": "Options",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "question": {
+        "maxLength": 4000,
+        "minLength": 5,
+        "title": "Question",
+        "type": "string"
+      },
+      "context_document_ids": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "maxItems": 20,
+        "title": "Context Document Ids",
+        "type": "array"
+      },
+      "filters": {
+        "$ref": "#/$defs/Filters"
+      },
+      "options": {
+        "$ref": "#/$defs/Options"
+      }
+    },
+    "required": [
+      "question"
+    ],
+    "title": "CreateResearch",
+    "type": "object"
+  },
+  "RefineResearch": {
+    "additionalProperties": false,
+    "properties": {
+      "instruction": {
+        "maxLength": 2000,
+        "minLength": 5,
+        "title": "Instruction",
+        "type": "string"
+      }
+    },
+    "required": [
+      "instruction"
+    ],
+    "title": "RefineResearch",
+    "type": "object"
+  },
+  "ResearchFeedback": {
+    "additionalProperties": false,
+    "properties": {
+      "accepted": {
+        "title": "Accepted",
+        "type": "boolean"
+      },
+      "use_for_training": {
+        "default": false,
+        "title": "Use For Training",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "accepted"
+    ],
+    "title": "ResearchFeedback",
+    "type": "object"
+  },
+  "ResearchMemo": {
+    "$defs": {
+      "Application": {
+        "additionalProperties": false,
+        "properties": {
+          "issue": {
+            "title": "Issue",
+            "type": "string"
+          },
+          "analysis": {
+            "title": "Analysis",
+            "type": "string"
+          },
+          "fact_citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Fact Citation Ids",
+            "type": "array"
+          },
+          "law_citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Law Citation Ids",
+            "type": "array"
+          },
+          "confidence": {
+            "$ref": "#/$defs/Confidence"
+          }
+        },
+        "required": [
+          "issue",
+          "analysis",
+          "fact_citation_ids",
+          "law_citation_ids",
+          "confidence"
+        ],
+        "title": "Application",
+        "type": "object"
+      },
+      "Authority": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "case_name": {
+            "title": "Case Name",
+            "type": "string"
+          },
+          "neutral_citation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Neutral Citation"
+          },
+          "court": {
+            "title": "Court",
+            "type": "string"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Decided At"
+          },
+          "proposition": {
+            "title": "Proposition",
+            "type": "string"
+          },
+          "treatment": {
+            "enum": [
+              "binding",
+              "persuasive",
+              "distinguished",
+              "overruled",
+              "negative_treatment",
+              "unknown"
+            ],
+            "title": "Treatment",
+            "type": "string"
+          },
+          "claim_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Claim Ids",
+            "type": "array"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "case_name",
+          "court",
+          "proposition",
+          "treatment",
+          "claim_ids",
+          "citation_ids"
+        ],
+        "title": "Authority",
+        "type": "object"
+      },
+      "Citation": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_name": {
+            "title": "Document Name",
+            "type": "string"
+          },
+          "chunk_id": {
+            "format": "uuid",
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "quoted_text": {
+            "minLength": 1,
+            "title": "Quoted Text",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Section"
+          },
+          "paragraph": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Paragraph"
+          },
+          "start_offset": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Start Offset"
+          },
+          "end_offset": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "End Offset"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Url"
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Jurisdiction"
+          },
+          "court": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Court"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Decided At"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "document_id",
+          "document_name",
+          "chunk_id",
+          "quoted_text"
+        ],
+        "title": "Citation",
+        "type": "object"
+      },
+      "Confidence": {
+        "properties": {
+          "score": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Score",
+            "type": "number"
+          },
+          "level": {
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "unavailable"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "score",
+          "level",
+          "explanation"
+        ],
+        "title": "Confidence",
+        "type": "object"
+      },
+      "Filters": {
+        "additionalProperties": false,
+        "properties": {
+          "jurisdictions": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Jurisdictions",
+            "type": "array"
+          },
+          "courts": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Courts",
+            "type": "array"
+          },
+          "date_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Date From"
+          },
+          "date_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Date To"
+          },
+          "source_types": {
+            "items": {
+              "enum": [
+                "statute",
+                "judgment",
+                "secondary"
+              ],
+              "type": "string"
+            },
+            "title": "Source Types",
+            "type": "array"
+          }
+        },
+        "title": "Filters",
+        "type": "object"
+      },
+      "Framework": {
+        "additionalProperties": false,
+        "properties": {
+          "heading": {
+            "title": "Heading",
+            "type": "string"
+          },
+          "analysis": {
+            "title": "Analysis",
+            "type": "string"
+          },
+          "claim_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Claim Ids",
+            "type": "array"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "heading",
+          "analysis",
+          "claim_ids",
+          "citation_ids"
+        ],
+        "title": "Framework",
+        "type": "object"
+      },
+      "Options": {
+        "additionalProperties": false,
+        "properties": {
+          "include_secondary_sources": {
+            "default": false,
+            "title": "Include Secondary Sources",
+            "type": "boolean"
+          },
+          "connect_to_case_facts": {
+            "default": true,
+            "title": "Connect To Case Facts",
+            "type": "boolean"
+          },
+          "depth": {
+            "default": "standard",
+            "enum": [
+              "standard",
+              "deep"
+            ],
+            "title": "Depth",
+            "type": "string"
+          }
+        },
+        "title": "Options",
+        "type": "object"
+      },
+      "Summary": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "claim_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Claim Ids",
+            "type": "array"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "text",
+          "claim_ids",
+          "citation_ids"
+        ],
+        "title": "Summary",
+        "type": "object"
+      },
+      "VerifiedClaim": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          },
+          "verification_status": {
+            "enum": [
+              "supported",
+              "partially_supported",
+              "unsupported",
+              "contradicted"
+            ],
+            "title": "Verification Status",
+            "type": "string"
+          },
+          "confidence": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Warning"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "citation_ids",
+          "verification_status",
+          "confidence"
+        ],
+        "title": "VerifiedClaim",
+        "type": "object"
+      },
+      "Warning": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "missing_information",
+              "contradiction",
+              "unsupported_claim",
+              "weak_authority",
+              "ocr_quality",
+              "partial_processing"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "related_claim_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Related Claim Ids",
+            "type": "array"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          },
+          "resolvable": {
+            "title": "Resolvable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "severity",
+          "title",
+          "message",
+          "resolvable"
+        ],
+        "title": "Warning",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "format": "uuid",
+        "title": "Id",
+        "type": "string"
+      },
+      "question": {
+        "title": "Question",
+        "type": "string"
+      },
+      "context_document_ids": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "title": "Context Document Ids",
+        "type": "array"
+      },
+      "filters": {
+        "$ref": "#/$defs/Filters"
+      },
+      "options": {
+        "$ref": "#/$defs/Options"
+      },
+      "status": {
+        "title": "Status",
+        "type": "string"
+      },
+      "parent_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Parent Id"
+      },
+      "version": {
+        "title": "Version",
+        "type": "integer"
+      },
+      "created_at": {
+        "title": "Created At",
+        "type": "string"
+      },
+      "model": {
+        "additionalProperties": true,
+        "title": "Model",
+        "type": "object"
+      },
+      "source_document_ids": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "title": "Source Document Ids",
+        "type": "array"
+      },
+      "job_id": {
+        "format": "uuid",
+        "title": "Job Id",
+        "type": "string"
+      },
+      "failure": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Failure"
+      },
+      "scope": {
+        "additionalProperties": true,
+        "title": "Scope",
+        "type": "object"
+      },
+      "search_log": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Search Log",
+        "type": "array"
+      },
+      "sub_queries": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Sub Queries",
+        "type": "array"
+      },
+      "retrieval": {
+        "additionalProperties": true,
+        "title": "Retrieval",
+        "type": "object"
+      },
+      "executive_summary": {
+        "$ref": "#/$defs/Summary"
+      },
+      "legal_framework": {
+        "items": {
+          "$ref": "#/$defs/Framework"
+        },
+        "title": "Legal Framework",
+        "type": "array"
+      },
+      "key_authorities": {
+        "items": {
+          "$ref": "#/$defs/Authority"
+        },
+        "title": "Key Authorities",
+        "type": "array"
+      },
+      "application_to_facts": {
+        "items": {
+          "$ref": "#/$defs/Application"
+        },
+        "title": "Application To Facts",
+        "type": "array"
+      },
+      "conflicting_authorities": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Conflicting Authorities",
+        "type": "array"
+      },
+      "claims": {
+        "items": {
+          "$ref": "#/$defs/VerifiedClaim"
+        },
+        "title": "Claims",
+        "type": "array"
+      },
+      "citations": {
+        "items": {
+          "$ref": "#/$defs/Citation"
+        },
+        "title": "Citations",
+        "type": "array"
+      },
+      "warnings": {
+        "items": {
+          "$ref": "#/$defs/Warning"
+        },
+        "title": "Warnings",
+        "type": "array"
+      },
+      "limitations": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Limitations",
+        "type": "array"
+      },
+      "confidence": {
+        "$ref": "#/$defs/Confidence"
+      },
+      "verification": {
+        "additionalProperties": true,
+        "title": "Verification",
+        "type": "object"
+      }
+    },
+    "required": [
+      "id",
+      "question",
+      "context_document_ids",
+      "filters",
+      "options",
+      "status",
+      "parent_id",
+      "version",
+      "created_at",
+      "model",
+      "source_document_ids",
+      "job_id",
+      "failure",
+      "scope",
+      "search_log",
+      "sub_queries",
+      "retrieval",
+      "executive_summary",
+      "legal_framework",
+      "key_authorities",
+      "application_to_facts",
+      "conflicting_authorities",
+      "claims",
+      "citations",
+      "warnings",
+      "limitations",
+      "confidence",
+      "verification"
+    ],
+    "title": "ResearchMemo",
+    "type": "object"
+  },
+  "CreateReview": {
+    "$defs": {
+      "ReviewOptions": {
+        "additionalProperties": false,
+        "properties": {
+          "compare_with_governing_law": {
+            "default": false,
+            "title": "Compare With Governing Law",
+            "type": "boolean"
+          },
+          "risk_tolerance": {
+            "default": "balanced",
+            "enum": [
+              "conservative",
+              "balanced",
+              "aggressive"
+            ],
+            "title": "Risk Tolerance",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Jurisdiction"
+          },
+          "as_of_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "As Of Date"
+          },
+          "authority_document_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Authority Document Ids",
+            "type": "array"
+          }
+        },
+        "title": "ReviewOptions",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "document_ids": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "maxItems": 20,
+        "minItems": 1,
+        "title": "Document Ids",
+        "type": "array"
+      },
+      "focus_question": {
+        "default": "",
+        "maxLength": 2000,
+        "title": "Focus Question",
+        "type": "string"
+      },
+      "options": {
+        "$ref": "#/$defs/ReviewOptions"
+      }
+    },
+    "required": [
+      "document_ids"
+    ],
+    "title": "CreateReview",
+    "type": "object"
+  },
+  "RerunReview": {
+    "$defs": {
+      "ReviewOptions": {
+        "additionalProperties": false,
+        "properties": {
+          "compare_with_governing_law": {
+            "default": false,
+            "title": "Compare With Governing Law",
+            "type": "boolean"
+          },
+          "risk_tolerance": {
+            "default": "balanced",
+            "enum": [
+              "conservative",
+              "balanced",
+              "aggressive"
+            ],
+            "title": "Risk Tolerance",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Jurisdiction"
+          },
+          "as_of_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "As Of Date"
+          },
+          "authority_document_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Authority Document Ids",
+            "type": "array"
+          }
+        },
+        "title": "ReviewOptions",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "focus_question": {
+        "anyOf": [
+          {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Focus Question"
+      },
+      "options": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/ReviewOptions"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      }
+    },
+    "title": "RerunReview",
+    "type": "object"
+  },
+  "ReviewReport": {
+    "$defs": {
+      "Citation": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_name": {
+            "title": "Document Name",
+            "type": "string"
+          },
+          "chunk_id": {
+            "format": "uuid",
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "quoted_text": {
+            "minLength": 1,
+            "title": "Quoted Text",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Section"
+          },
+          "paragraph": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Paragraph"
+          },
+          "start_offset": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Start Offset"
+          },
+          "end_offset": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "End Offset"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Url"
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Jurisdiction"
+          },
+          "court": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Court"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Decided At"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "document_id",
+          "document_name",
+          "chunk_id",
+          "quoted_text"
+        ],
+        "title": "Citation",
+        "type": "object"
+      },
+      "Confidence": {
+        "properties": {
+          "score": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Score",
+            "type": "number"
+          },
+          "level": {
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "unavailable"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "score",
+          "level",
+          "explanation"
+        ],
+        "title": "Confidence",
+        "type": "object"
+      },
+      "Contradiction": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "topic": {
+            "title": "Topic",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "sides": {
+            "items": {
+              "$ref": "#/$defs/Side"
+            },
+            "minItems": 2,
+            "title": "Sides",
+            "type": "array"
+          },
+          "legal_effect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Legal Effect"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Resolution"
+          },
+          "confidence": {
+            "$ref": "#/$defs/Confidence"
+          }
+        },
+        "required": [
+          "id",
+          "topic",
+          "description",
+          "severity",
+          "sides",
+          "confidence"
+        ],
+        "title": "Contradiction",
+        "type": "object"
+      },
+      "Evidence": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "clause",
+              "fact",
+              "law",
+              "precedent"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Citation Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "category",
+          "citation_ids"
+        ],
+        "title": "Evidence",
+        "type": "object"
+      },
+      "Fact": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          },
+          "claim_id": {
+            "format": "uuid",
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Citation Ids",
+            "type": "array"
+          },
+          "assertion_type": {
+            "default": "source_statement",
+            "enum": [
+              "source_statement",
+              "allegation",
+              "finding",
+              "inference"
+            ],
+            "title": "Assertion Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "value",
+          "claim_id",
+          "citation_ids"
+        ],
+        "title": "Fact",
+        "type": "object"
+      },
+      "InterpretationCheck": {
+        "additionalProperties": false,
+        "properties": {
+          "item_id": {
+            "format": "uuid",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "supported": {
+            "title": "Supported",
+            "type": "boolean"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "supported",
+          "reason"
+        ],
+        "title": "InterpretationCheck",
+        "type": "object"
+      },
+      "Missing": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "item": {
+            "title": "Item",
+            "type": "string"
+          },
+          "why_it_matters": {
+            "title": "Why It Matters",
+            "type": "string"
+          },
+          "suggested_action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Suggested Action"
+          },
+          "severity": {
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "item",
+          "why_it_matters",
+          "severity"
+        ],
+        "title": "Missing",
+        "type": "object"
+      },
+      "Overview": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Citation Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "citation_ids"
+        ],
+        "title": "Overview",
+        "type": "object"
+      },
+      "ReviewOptions": {
+        "additionalProperties": false,
+        "properties": {
+          "compare_with_governing_law": {
+            "default": false,
+            "title": "Compare With Governing Law",
+            "type": "boolean"
+          },
+          "risk_tolerance": {
+            "default": "balanced",
+            "enum": [
+              "conservative",
+              "balanced",
+              "aggressive"
+            ],
+            "title": "Risk Tolerance",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Jurisdiction"
+          },
+          "as_of_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "As Of Date"
+          },
+          "authority_document_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Authority Document Ids",
+            "type": "array"
+          }
+        },
+        "title": "ReviewOptions",
+        "type": "object"
+      },
+      "Risk": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Id"
+          },
+          "risk": {
+            "title": "Risk",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "likelihood": {
+            "enum": [
+              "unlikely",
+              "possible",
+              "likely",
+              "unknown"
+            ],
+            "title": "Likelihood",
+            "type": "string"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Citation Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "risk",
+          "severity",
+          "likelihood",
+          "citation_ids"
+        ],
+        "title": "Risk",
+        "type": "object"
+      },
+      "RiskSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "overall": {
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical",
+              "undetermined"
+            ],
+            "title": "Overall",
+            "type": "string"
+          },
+          "rationale": {
+            "title": "Rationale",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/$defs/Risk"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "overall",
+          "rationale",
+          "items"
+        ],
+        "title": "RiskSummary",
+        "type": "object"
+      },
+      "Side": {
+        "additionalProperties": false,
+        "properties": {
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Citation Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "statement",
+          "citation_ids"
+        ],
+        "title": "Side",
+        "type": "object"
+      },
+      "TimelineEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "event": {
+            "minLength": 1,
+            "title": "Event",
+            "type": "string"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Citation Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "event",
+          "citation_ids"
+        ],
+        "title": "TimelineEvent",
+        "type": "object"
+      },
+      "VerificationRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "method": {
+            "default": "",
+            "title": "Method",
+            "type": "string"
+          },
+          "same_model": {
+            "default": true,
+            "title": "Same Model",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/$defs/InterpretationCheck"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "VerificationRecord",
+        "type": "object"
+      },
+      "VerifiedClaim": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          },
+          "verification_status": {
+            "enum": [
+              "supported",
+              "partially_supported",
+              "unsupported",
+              "contradicted"
+            ],
+            "title": "Verification Status",
+            "type": "string"
+          },
+          "confidence": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Warning"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "citation_ids",
+          "verification_status",
+          "confidence"
+        ],
+        "title": "VerifiedClaim",
+        "type": "object"
+      },
+      "Warning": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "missing_information",
+              "contradiction",
+              "unsupported_claim",
+              "weak_authority",
+              "ocr_quality",
+              "partial_processing"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "related_claim_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Related Claim Ids",
+            "type": "array"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          },
+          "resolvable": {
+            "title": "Resolvable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "severity",
+          "title",
+          "message",
+          "resolvable"
+        ],
+        "title": "Warning",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "format": "uuid",
+        "title": "Id",
+        "type": "string"
+      },
+      "status": {
+        "title": "Status",
+        "type": "string"
+      },
+      "focus_question": {
+        "title": "Focus Question",
+        "type": "string"
+      },
+      "key_facts": {
+        "items": {
+          "$ref": "#/$defs/Fact"
+        },
+        "title": "Key Facts",
+        "type": "array"
+      },
+      "contradictions": {
+        "items": {
+          "$ref": "#/$defs/Contradiction"
+        },
+        "title": "Contradictions",
+        "type": "array"
+      },
+      "missing_information": {
+        "items": {
+          "$ref": "#/$defs/Missing"
+        },
+        "title": "Missing Information",
+        "type": "array"
+      },
+      "relevant_evidence": {
+        "items": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "title": "Relevant Evidence",
+        "type": "array"
+      },
+      "risk_summary": {
+        "$ref": "#/$defs/RiskSummary"
+      },
+      "claims": {
+        "items": {
+          "$ref": "#/$defs/VerifiedClaim"
+        },
+        "title": "Claims",
+        "type": "array"
+      },
+      "citations": {
+        "items": {
+          "$ref": "#/$defs/Citation"
+        },
+        "title": "Citations",
+        "type": "array"
+      },
+      "warnings": {
+        "items": {
+          "$ref": "#/$defs/Warning"
+        },
+        "title": "Warnings",
+        "type": "array"
+      },
+      "confidence": {
+        "$ref": "#/$defs/Confidence"
+      },
+      "source_document_ids": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "title": "Source Document Ids",
+        "type": "array"
+      },
+      "created_at": {
+        "title": "Created At",
+        "type": "string"
+      },
+      "options": {
+        "$ref": "#/$defs/ReviewOptions"
+      },
+      "model": {
+        "additionalProperties": true,
+        "title": "Model",
+        "type": "object"
+      },
+      "version": {
+        "title": "Version",
+        "type": "integer"
+      },
+      "root_review_id": {
+        "format": "uuid",
+        "title": "Root Review Id",
+        "type": "string"
+      },
+      "previous_review_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Previous Review Id"
+      },
+      "authority_coverage": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Authority Coverage",
+        "type": "array"
+      },
+      "job_id": {
+        "format": "uuid",
+        "title": "Job Id",
+        "type": "string"
+      },
+      "failure": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Failure"
+      },
+      "overview": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Overview"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "timeline": {
+        "items": {
+          "$ref": "#/$defs/TimelineEvent"
+        },
+        "title": "Timeline",
+        "type": "array"
+      },
+      "document_kind": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Document Kind"
+      },
+      "coverage": {
+        "additionalProperties": true,
+        "title": "Coverage",
+        "type": "object"
+      },
+      "verification": {
+        "$ref": "#/$defs/VerificationRecord"
+      }
+    },
+    "required": [
+      "id",
+      "status",
+      "focus_question",
+      "key_facts",
+      "contradictions",
+      "missing_information",
+      "relevant_evidence",
+      "risk_summary",
+      "claims",
+      "citations",
+      "warnings",
+      "confidence",
+      "source_document_ids",
+      "created_at",
+      "options",
+      "model",
+      "version",
+      "root_review_id",
+      "job_id"
+    ],
+    "title": "ReviewReport",
+    "type": "object"
+  },
+  "Citation": {
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "format": "uuid",
+        "title": "Id",
+        "type": "string"
+      },
+      "label": {
+        "minLength": 1,
+        "title": "Label",
+        "type": "string"
+      },
+      "document_id": {
+        "format": "uuid",
+        "title": "Document Id",
+        "type": "string"
+      },
+      "document_name": {
+        "title": "Document Name",
+        "type": "string"
+      },
+      "chunk_id": {
+        "format": "uuid",
+        "title": "Chunk Id",
+        "type": "string"
+      },
+      "quoted_text": {
+        "minLength": 1,
+        "title": "Quoted Text",
+        "type": "string"
+      },
+      "page": {
+        "anyOf": [
+          {
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Page"
+      },
+      "section": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Section"
+      },
+      "paragraph": {
+        "anyOf": [
+          {
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Paragraph"
+      },
+      "start_offset": {
+        "anyOf": [
+          {
+            "minimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Start Offset"
+      },
+      "end_offset": {
+        "anyOf": [
+          {
+            "minimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "End Offset"
+      },
+      "source_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Source Url"
+      },
+      "jurisdiction": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Jurisdiction"
+      },
+      "court": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Court"
+      },
+      "decided_at": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Decided At"
+      }
+    },
+    "required": [
+      "id",
+      "label",
+      "document_id",
+      "document_name",
+      "chunk_id",
+      "quoted_text"
+    ],
+    "title": "Citation",
+    "type": "object"
+  },
+  "VerifiedClaim": {
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "format": "uuid",
+        "title": "Id",
+        "type": "string"
+      },
+      "text": {
+        "minLength": 1,
+        "title": "Text",
+        "type": "string"
+      },
+      "citation_ids": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "title": "Citation Ids",
+        "type": "array"
+      },
+      "verification_status": {
+        "enum": [
+          "supported",
+          "partially_supported",
+          "unsupported",
+          "contradicted"
+        ],
+        "title": "Verification Status",
+        "type": "string"
+      },
+      "confidence": {
+        "maximum": 1,
+        "minimum": 0,
+        "title": "Confidence",
+        "type": "number"
+      },
+      "warning": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Warning"
+      }
+    },
+    "required": [
+      "id",
+      "text",
+      "citation_ids",
+      "verification_status",
+      "confidence"
+    ],
+    "title": "VerifiedClaim",
+    "type": "object"
+  },
+  "CreateDraft": {
+    "$defs": {
+      "Preferences": {
+        "additionalProperties": false,
+        "properties": {
+          "language": {
+            "const": "en",
+            "default": "en",
+            "title": "Language",
+            "type": "string"
+          },
+          "tone": {
+            "default": "formal",
+            "enum": [
+              "formal",
+              "plain"
+            ],
+            "title": "Tone",
+            "type": "string"
+          },
+          "include_alternative_clauses": {
+            "default": false,
+            "title": "Include Alternative Clauses",
+            "type": "boolean"
+          }
+        },
+        "title": "Preferences",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "document_type": {
+        "maxLength": 100,
+        "minLength": 2,
+        "title": "Document Type",
+        "type": "string"
+      },
+      "jurisdiction": {
+        "maxLength": 100,
+        "minLength": 2,
+        "title": "Jurisdiction",
+        "type": "string"
+      },
+      "court": {
+        "anyOf": [
+          {
+            "maxLength": 200,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Court"
+      },
+      "instructions": {
+        "maxLength": 8000,
+        "minLength": 5,
+        "title": "Instructions",
+        "type": "string"
+      },
+      "facts": {
+        "additionalProperties": true,
+        "title": "Facts",
+        "type": "object"
+      },
+      "supporting_document_ids": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "maxItems": 20,
+        "title": "Supporting Document Ids",
+        "type": "array"
+      },
+      "preferences": {
+        "$ref": "#/$defs/Preferences"
+      }
+    },
+    "required": [
+      "document_type",
+      "jurisdiction",
+      "instructions"
+    ],
+    "title": "CreateDraft",
+    "type": "object"
+  },
+  "Answers": {
+    "$defs": {
+      "Answer": {
+        "additionalProperties": false,
+        "properties": {
+          "requirement_id": {
+            "format": "uuid",
+            "title": "Requirement Id",
+            "type": "string"
+          },
+          "value": {
+            "maxLength": 8000,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requirement_id",
+          "value"
+        ],
+        "title": "Answer",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "answers": {
+        "items": {
+          "$ref": "#/$defs/Answer"
+        },
+        "maxItems": 50,
+        "title": "Answers",
+        "type": "array"
+      }
+    },
+    "required": [
+      "answers"
+    ],
+    "title": "Answers",
+    "type": "object"
+  },
+  "GenerateDraft": {
+    "additionalProperties": false,
+    "properties": {
+      "proceed_with_missing_information": {
+        "default": false,
+        "title": "Proceed With Missing Information",
+        "type": "boolean"
+      },
+      "acknowledged_requirement_ids": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "maxItems": 50,
+        "title": "Acknowledged Requirement Ids",
+        "type": "array"
+      }
+    },
+    "title": "GenerateDraft",
+    "type": "object"
+  },
+  "EditSection": {
+    "additionalProperties": false,
+    "properties": {
+      "text": {
+        "maxLength": 12000,
+        "minLength": 1,
+        "title": "Text",
+        "type": "string"
+      },
+      "base_version": {
+        "minimum": 1,
+        "title": "Base Version",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "text",
+      "base_version"
+    ],
+    "title": "EditSection",
+    "type": "object"
+  },
+  "DraftFeedback": {
+    "additionalProperties": false,
+    "properties": {
+      "accepted": {
+        "title": "Accepted",
+        "type": "boolean"
+      },
+      "use_for_training": {
+        "default": false,
+        "title": "Use For Training",
+        "type": "boolean"
+      },
+      "base_version": {
+        "minimum": 1,
+        "title": "Base Version",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "accepted",
+      "base_version"
+    ],
+    "title": "DraftFeedback",
+    "type": "object"
+  },
+  "LegalDraft": {
+    "$defs": {
+      "Citation": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_name": {
+            "title": "Document Name",
+            "type": "string"
+          },
+          "chunk_id": {
+            "format": "uuid",
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "quoted_text": {
+            "minLength": 1,
+            "title": "Quoted Text",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Section"
+          },
+          "paragraph": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Paragraph"
+          },
+          "start_offset": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Start Offset"
+          },
+          "end_offset": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "End Offset"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Url"
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Jurisdiction"
+          },
+          "court": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Court"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Decided At"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "document_id",
+          "document_name",
+          "chunk_id",
+          "quoted_text"
+        ],
+        "title": "Citation",
+        "type": "object"
+      },
+      "Confidence": {
+        "properties": {
+          "score": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Score",
+            "type": "number"
+          },
+          "level": {
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "unavailable"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "score",
+          "level",
+          "explanation"
+        ],
+        "title": "Confidence",
+        "type": "object"
+      },
+      "DraftBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "paragraph",
+              "heading",
+              "list",
+              "signature",
+              "placeholder"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "claim_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Claim Ids",
+            "type": "array"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          },
+          "editable": {
+            "default": true,
+            "title": "Editable",
+            "type": "boolean"
+          },
+          "statement_type": {
+            "enum": [
+              "fact",
+              "legal",
+              "draft_language",
+              "placeholder",
+              "user_edit"
+            ],
+            "title": "Statement Type",
+            "type": "string"
+          },
+          "verification_status": {
+            "enum": [
+              "checked",
+              "unverified",
+              "placeholder"
+            ],
+            "title": "Verification Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "text",
+          "claim_ids",
+          "citation_ids",
+          "statement_type",
+          "verification_status"
+        ],
+        "title": "DraftBlock",
+        "type": "object"
+      },
+      "DraftSection": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "heading": {
+            "title": "Heading",
+            "type": "string"
+          },
+          "order": {
+            "title": "Order",
+            "type": "integer"
+          },
+          "blocks": {
+            "items": {
+              "$ref": "#/$defs/DraftBlock"
+            },
+            "title": "Blocks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "heading",
+          "order",
+          "blocks"
+        ],
+        "title": "DraftSection",
+        "type": "object"
+      },
+      "Preferences": {
+        "additionalProperties": false,
+        "properties": {
+          "language": {
+            "const": "en",
+            "default": "en",
+            "title": "Language",
+            "type": "string"
+          },
+          "tone": {
+            "default": "formal",
+            "enum": [
+              "formal",
+              "plain"
+            ],
+            "title": "Tone",
+            "type": "string"
+          },
+          "include_alternative_clauses": {
+            "default": false,
+            "title": "Include Alternative Clauses",
+            "type": "boolean"
+          }
+        },
+        "title": "Preferences",
+        "type": "object"
+      },
+      "VerifiedClaim": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          },
+          "verification_status": {
+            "enum": [
+              "supported",
+              "partially_supported",
+              "unsupported",
+              "contradicted"
+            ],
+            "title": "Verification Status",
+            "type": "string"
+          },
+          "confidence": {
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Warning"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "citation_ids",
+          "verification_status",
+          "confidence"
+        ],
+        "title": "VerifiedClaim",
+        "type": "object"
+      },
+      "Warning": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "missing_information",
+              "contradiction",
+              "unsupported_claim",
+              "weak_authority",
+              "ocr_quality",
+              "partial_processing"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "related_claim_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Related Claim Ids",
+            "type": "array"
+          },
+          "citation_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Citation Ids",
+            "type": "array"
+          },
+          "resolvable": {
+            "title": "Resolvable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "severity",
+          "title",
+          "message",
+          "resolvable"
+        ],
+        "title": "Warning",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "format": "uuid",
+        "title": "Id",
+        "type": "string"
+      },
+      "status": {
+        "title": "Status",
+        "type": "string"
+      },
+      "document_type": {
+        "title": "Document Type",
+        "type": "string"
+      },
+      "title": {
+        "title": "Title",
+        "type": "string"
+      },
+      "jurisdiction": {
+        "title": "Jurisdiction",
+        "type": "string"
+      },
+      "court": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Court"
+      },
+      "instructions": {
+        "title": "Instructions",
+        "type": "string"
+      },
+      "facts": {
+        "additionalProperties": true,
+        "title": "Facts",
+        "type": "object"
+      },
+      "supporting_document_ids": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "title": "Supporting Document Ids",
+        "type": "array"
+      },
+      "source_document_ids": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "title": "Source Document Ids",
+        "type": "array"
+      },
+      "preferences": {
+        "$ref": "#/$defs/Preferences"
+      },
+      "requirements": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Requirements",
+        "type": "array"
+      },
+      "sections": {
+        "items": {
+          "$ref": "#/$defs/DraftSection"
+        },
+        "title": "Sections",
+        "type": "array"
+      },
+      "unresolved_placeholders": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Unresolved Placeholders",
+        "type": "array"
+      },
+      "authorities": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Authorities",
+        "type": "array"
+      },
+      "claims": {
+        "items": {
+          "$ref": "#/$defs/VerifiedClaim"
+        },
+        "title": "Claims",
+        "type": "array"
+      },
+      "citations": {
+        "items": {
+          "$ref": "#/$defs/Citation"
+        },
+        "title": "Citations",
+        "type": "array"
+      },
+      "warnings": {
+        "items": {
+          "$ref": "#/$defs/Warning"
+        },
+        "title": "Warnings",
+        "type": "array"
+      },
+      "confidence": {
+        "$ref": "#/$defs/Confidence"
+      },
+      "version": {
+        "title": "Version",
+        "type": "integer"
+      },
+      "created_at": {
+        "title": "Created At",
+        "type": "string"
+      },
+      "job_id": {
+        "format": "uuid",
+        "title": "Job Id",
+        "type": "string"
+      },
+      "model": {
+        "additionalProperties": true,
+        "title": "Model",
+        "type": "object"
+      },
+      "failure": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Failure"
+      },
+      "verification": {
+        "additionalProperties": true,
+        "title": "Verification",
+        "type": "object"
+      },
+      "retrieval": {
+        "additionalProperties": true,
+        "title": "Retrieval",
+        "type": "object"
+      },
+      "needs_verification": {
+        "default": false,
+        "title": "Needs Verification",
+        "type": "boolean"
+      },
+      "context_document_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Context Document Id"
+      },
+      "acknowledged_requirement_ids": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "title": "Acknowledged Requirement Ids",
+        "type": "array"
+      }
+    },
+    "required": [
+      "id",
+      "status",
+      "document_type",
+      "title",
+      "jurisdiction",
+      "court",
+      "instructions",
+      "facts",
+      "supporting_document_ids",
+      "source_document_ids",
+      "preferences",
+      "requirements",
+      "sections",
+      "unresolved_placeholders",
+      "authorities",
+      "claims",
+      "citations",
+      "warnings",
+      "confidence",
+      "version",
+      "created_at",
+      "job_id",
+      "model"
+    ],
+    "title": "LegalDraft",
+    "type": "object"
+  }
+}

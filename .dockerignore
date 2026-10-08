@@ -1,0 +1,12 @@
+.git
+.venv
+.runtime
+.data*
+tmp
+.pytest_cache
+**/__pycache__
+.env
+*.key
+
+releases
+integration/*.zip

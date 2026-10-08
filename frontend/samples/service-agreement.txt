@@ -1,0 +1,15 @@
+SERVICE AGREEMENT
+
+1. PARTIES
+This sample agreement is between Cedar Labs (Client) and Northstar Services (Supplier).
+
+2. PAYMENT
+The Client shall pay INR 150,000 on 15 October 2026. Invoice disputes must be notified within seven days.
+
+3. TERMINATION
+Either party may terminate by giving 30 days written notice. The termination schedule referenced in Annexure B is not attached.
+
+4. GOVERNING LAW
+The parties identify India as the jurisdiction for this sample agreement.
+
+Synthetic demonstration source. This document is not legal advice or an executed agreement.

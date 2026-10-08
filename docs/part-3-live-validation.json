@@ -1,0 +1,16 @@
+{
+  "draft_id": "83edef94-b428-42b5-92a8-a580722c3083",
+  "status": "completed_with_warnings",
+  "version": 3,
+  "sections": 9,
+  "claims": 10,
+  "citations": 4,
+  "unresolved_placeholders": 2,
+  "source_span_validation": "passed",
+  "exports_bytes": {
+    "txt": 2781,
+    "docx": 37640,
+    "pdf": 3787
+  },
+  "model": "qwen3:4b-instruct"
+}

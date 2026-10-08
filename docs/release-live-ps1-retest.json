@@ -1,0 +1,465 @@
+{
+  "fixture": "Synthetic acceptance data; not legal authority.",
+  "started_at": 1791467294.9319723,
+  "workflows": {
+    "chat": {
+      "elapsed_seconds": 66.62,
+      "job": {
+        "id": "61c69c7a-b808-4a18-bb51-1f276b6badad",
+        "workflow": "chat",
+        "resource_id": "8612b59f-261f-43dd-8d54-9e9af2558fc9",
+        "status": "completed_with_warnings",
+        "progress": 1,
+        "created_at": "2026-10-08T13:48:17.256578+00:00",
+        "result_id": "8612b59f-261f-43dd-8d54-9e9af2558fc9",
+        "warnings": [
+          {
+            "id": "c3d5af2c-1e58-459a-8be0-f0b4339882be",
+            "type": "weak_authority",
+            "severity": "warning",
+            "title": "Source support limits",
+            "message": "Only bounded excerpts from selected workspace documents were considered. Same-model checks may miss errors; human legal review is required.",
+            "citation_ids": [],
+            "resolvable": false
+          }
+        ],
+        "failure": null
+      },
+      "result": {
+        "id": "8612b59f-261f-43dd-8d54-9e9af2558fc9",
+        "conversation_id": "b2389cbb-0502-45ef-904f-0041c5a7e6cc",
+        "created_at": "2026-10-08T13:48:17.256578+00:00",
+        "source_document_ids": [
+          "7af48159-81af-4749-9aab-9e37581b4e3d"
+        ],
+        "claims": [],
+        "citations": [],
+        "warnings": [
+          {
+            "id": "c3d5af2c-1e58-459a-8be0-f0b4339882be",
+            "type": "weak_authority",
+            "severity": "warning",
+            "title": "Source support limits",
+            "message": "Only bounded excerpts from selected workspace documents were considered. Same-model checks may miss errors; human legal review is required.",
+            "citation_ids": [],
+            "resolvable": false
+          }
+        ],
+        "failure": null,
+        "role": "assistant",
+        "content": "The selected documents do not provide enough verified evidence to answer. Attach relevant documents or narrow the question.",
+        "question": "Who must pay whom? Return one concise supported statement only.",
+        "status": "completed_with_warnings",
+        "job_id": "61c69c7a-b808-4a18-bb51-1f276b6badad",
+        "model": {
+          "id": "leximind-chat",
+          "workflow": "chat",
+          "version": "qwen3:4b-instruct",
+          "kind": "local_llm",
+          "provider": "ollama",
+          "available": true,
+          "trainable": true,
+          "output_schema": "grounded-chat-v1",
+          "prompt_version": "grounded-chat-v1",
+          "verification_version": "quoted-spans-plus-model-check-v1",
+          "destination": "local machine",
+          "deployment": "local"
+        },
+        "verification": {
+          "same_model": true,
+          "items": []
+        },
+        "retrieval": {
+          "chunk_ids": [
+            "734a4ae4-e5c9-4a9e-a6d4-68d75c96e33c"
+          ],
+          "context_characters": 102
+        },
+        "confidence": {
+          "score": 0,
+          "level": "unavailable",
+          "explanation": "Source support only; not a guarantee of legal correctness."
+        }
+      }
+    },
+    "drafting": {
+      "elapsed_seconds": 291.44,
+      "job": {
+        "id": "a88cfb65-dc97-460a-859a-5fee1064b758",
+        "workflow": "drafting",
+        "resource_id": "2f899a0f-f6ba-4593-88d9-1eb4cabe7b9c",
+        "phase": "generate",
+        "status": "completed_with_warnings",
+        "progress": 1,
+        "created_at": "2026-10-08T13:49:23.912550+00:00",
+        "result_id": "2f899a0f-f6ba-4593-88d9-1eb4cabe7b9c",
+        "warnings": [
+          {
+            "id": "3c346095-43ae-4ba7-87c6-24ca34588d25",
+            "type": "weak_authority",
+            "severity": "warning",
+            "title": "Authority scope and currency",
+            "message": "Only available tenant sources were searched. Supplied statutes and judgments are not certified current, binding or applicable. No external legal database was queried.",
+            "related_claim_ids": [],
+            "citation_ids": [],
+            "resolvable": false
+          },
+          {
+            "id": "3c4bb739-938c-4863-81f3-3919cf8e93e9",
+            "type": "partial_processing",
+            "severity": "info",
+            "title": "Model-assisted working draft",
+            "message": "Quotes and offsets were validated in code; a second pass of the same model checked interpretations. Correlated model errors remain possible. Human legal review is required.",
+            "related_claim_ids": [],
+            "citation_ids": [],
+            "resolvable": false
+          }
+        ],
+        "failure": null
+      },
+      "result": {
+        "id": "2f899a0f-f6ba-4593-88d9-1eb4cabe7b9c",
+        "status": "completed_with_warnings",
+        "document_type": "contract_clause",
+        "title": "Contract Clause",
+        "jurisdiction": "IN",
+        "court": null,
+        "instructions": "Write one short payment clause with one section and one paragraph only. No background, grounds, relief, verification, signature, schedule or notice sections. Use only the supplied facts.",
+        "facts": {
+          "parties": "Example Buyer and Example Supplier",
+          "clause_purpose": "Payment",
+          "obligations": "Example Buyer must pay Example Supplier INR 5000 within ten days of invoice.",
+          "effective_date": "When an invoice is issued."
+        },
+        "supporting_document_ids": [
+          "7af48159-81af-4749-9aab-9e37581b4e3d"
+        ],
+        "source_document_ids": [
+          "61100a9e-0b53-4645-a37e-2f2be7c9e11f",
+          "7af48159-81af-4749-9aab-9e37581b4e3d"
+        ],
+        "preferences": {
+          "language": "en",
+          "tone": "formal",
+          "include_alternative_clauses": false
+        },
+        "requirements": [
+          {
+            "id": "7af84d22-9710-4522-8e8e-154e1fa7b7b0",
+            "key": "jurisdiction",
+            "question": "Applicable jurisdiction",
+            "rationale": "Needed to produce a specific draft without inventing information. This intake template is not a certified jurisdictional filing checklist.",
+            "required": true,
+            "answer_type": "short_text",
+            "current_answer": "IN",
+            "source": "template"
+          },
+          {
+            "id": "75267b0b-ff4f-4f14-be2c-4c821941aa6f",
+            "key": "instructions",
+            "question": "What should the draft achieve?",
+            "rationale": "Needed to produce a specific draft without inventing information. This intake template is not a certified jurisdictional filing checklist.",
+            "required": true,
+            "answer_type": "long_text",
+            "current_answer": "Write one short payment clause with one section and one paragraph only. No background, grounds, relief, verification, signature, schedule or notice sections. Use only the supplied facts.",
+            "source": "template"
+          },
+          {
+            "id": "ae5a1bca-1b38-4844-8925-4d34872c4171",
+            "key": "parties",
+            "question": "Parties and their roles",
+            "rationale": "Needed to produce a specific draft without inventing information. This intake template is not a certified jurisdictional filing checklist.",
+            "required": false,
+            "answer_type": "short_text",
+            "current_answer": "Example Buyer and Example Supplier",
+            "source": "template"
+          },
+          {
+            "id": "c9f5aae7-8764-4009-bd92-4dfacafc5e31",
+            "key": "clause_purpose",
+            "question": "Purpose of the clause",
+            "rationale": "Needed to produce a specific draft without inventing information. This intake template is not a certified jurisdictional filing checklist.",
+            "required": false,
+            "answer_type": "short_text",
+            "current_answer": "Payment",
+            "source": "template"
+          },
+          {
+            "id": "e0d923cd-17c3-4d40-ae0e-890a6a7bd0ba",
+            "key": "obligations",
+            "question": "Agreed obligations and exceptions",
+            "rationale": "Needed to produce a specific draft without inventing information. This intake template is not a certified jurisdictional filing checklist.",
+            "required": false,
+            "answer_type": "long_text",
+            "current_answer": "Example Buyer must pay Example Supplier INR 5000 within ten days of invoice.",
+            "source": "template"
+          },
+          {
+            "id": "14f3791d-c1a2-40b1-a073-2254c13231ad",
+            "key": "effective_date",
+            "question": "Effective date or triggering conditions",
+            "rationale": "Needed to produce a specific draft without inventing information. This intake template is not a certified jurisdictional filing checklist.",
+            "required": false,
+            "answer_type": "short_text",
+            "current_answer": "When an invoice is issued.",
+            "source": "template"
+          }
+        ],
+        "sections": [
+          {
+            "id": "7babd956-5eae-40d2-b3b8-04813091014a",
+            "heading": "Draft section",
+            "order": 0,
+            "blocks": [
+              {
+                "id": "2ff99b31-e7ba-4cf5-ad45-5799f6565769",
+                "kind": "paragraph",
+                "text": "The Example Buyer shall pay the Example Supplier the sum of INR 5000 within ten days of the issuance of an invoice, with the effective date of payment being the date of invoice issuance.",
+                "claim_ids": [],
+                "citation_ids": [
+                  "a51eee19-f06d-4d68-985e-844df77106e8",
+                  "cfe6c708-2642-4edf-affc-5633a01afa29",
+                  "4ff09faa-2039-4409-87b3-11c329511573",
+                  "003812c1-246e-4c8e-9645-9622223ca5d2"
+                ],
+                "editable": true,
+                "statement_type": "draft_language",
+                "verification_status": "checked"
+              }
+            ]
+          }
+        ],
+        "unresolved_placeholders": [],
+        "authorities": [],
+        "claims": [],
+        "citations": [
+          {
+            "id": "a51eee19-f06d-4d68-985e-844df77106e8",
+            "label": "S1",
+            "document_id": "61100a9e-0b53-4645-a37e-2f2be7c9e11f",
+            "document_name": "Legal Drafting intake v2.txt",
+            "chunk_id": "574c6ce1-106c-41ed-a08e-28f2089148c1",
+            "quoted_text": "facts.parties: \"Example Buyer and Example Supplier\"",
+            "page": null,
+            "section": "User-provided intake",
+            "paragraph": null,
+            "start_offset": 353,
+            "end_offset": 404,
+            "source_url": null,
+            "jurisdiction": "IN",
+            "court": null,
+            "decided_at": null
+          },
+          {
+            "id": "cfe6c708-2642-4edf-affc-5633a01afa29",
+            "label": "S2",
+            "document_id": "61100a9e-0b53-4645-a37e-2f2be7c9e11f",
+            "document_name": "Legal Drafting intake v2.txt",
+            "chunk_id": "574c6ce1-106c-41ed-a08e-28f2089148c1",
+            "quoted_text": "facts.clause_purpose: \"Payment\"",
+            "page": null,
+            "section": "User-provided intake",
+            "paragraph": null,
+            "start_offset": 405,
+            "end_offset": 436,
+            "source_url": null,
+            "jurisdiction": "IN",
+            "court": null,
+            "decided_at": null
+          },
+          {
+            "id": "4ff09faa-2039-4409-87b3-11c329511573",
+            "label": "S3",
+            "document_id": "61100a9e-0b53-4645-a37e-2f2be7c9e11f",
+            "document_name": "Legal Drafting intake v2.txt",
+            "chunk_id": "574c6ce1-106c-41ed-a08e-28f2089148c1",
+            "quoted_text": "facts.obligations: \"Example Buyer must pay Example Supplier INR 5000 within ten days of invoice.\"",
+            "page": null,
+            "section": "User-provided intake",
+            "paragraph": null,
+            "start_offset": 437,
+            "end_offset": 534,
+            "source_url": null,
+            "jurisdiction": "IN",
+            "court": null,
+            "decided_at": null
+          },
+          {
+            "id": "003812c1-246e-4c8e-9645-9622223ca5d2",
+            "label": "S4",
+            "document_id": "61100a9e-0b53-4645-a37e-2f2be7c9e11f",
+            "document_name": "Legal Drafting intake v2.txt",
+            "chunk_id": "574c6ce1-106c-41ed-a08e-28f2089148c1",
+            "quoted_text": "facts.effective_date: \"When an invoice is issued.\"",
+            "page": null,
+            "section": "User-provided intake",
+            "paragraph": null,
+            "start_offset": 535,
+            "end_offset": 585,
+            "source_url": null,
+            "jurisdiction": "IN",
+            "court": null,
+            "decided_at": null
+          }
+        ],
+        "warnings": [
+          {
+            "id": "3c346095-43ae-4ba7-87c6-24ca34588d25",
+            "type": "weak_authority",
+            "severity": "warning",
+            "title": "Authority scope and currency",
+            "message": "Only available tenant sources were searched. Supplied statutes and judgments are not certified current, binding or applicable. No external legal database was queried.",
+            "related_claim_ids": [],
+            "citation_ids": [],
+            "resolvable": false
+          },
+          {
+            "id": "3c4bb739-938c-4863-81f3-3919cf8e93e9",
+            "type": "partial_processing",
+            "severity": "info",
+            "title": "Model-assisted working draft",
+            "message": "Quotes and offsets were validated in code; a second pass of the same model checked interpretations. Correlated model errors remain possible. Human legal review is required.",
+            "related_claim_ids": [],
+            "citation_ids": [],
+            "resolvable": false
+          }
+        ],
+        "confidence": {
+          "score": 0.6,
+          "level": "medium",
+          "explanation": "Confidence concerns quoted-source support, not factual truth, filing compliance or legal correctness."
+        },
+        "version": 2,
+        "created_at": "2026-10-08T13:49:23.817668+00:00",
+        "job_id": "a88cfb65-dc97-460a-859a-5fee1064b758",
+        "model": {
+          "id": "leximind-drafting",
+          "workflow": "drafting",
+          "version": "qwen3:4b-instruct",
+          "kind": "local_llm",
+          "provider": "ollama",
+          "available": true,
+          "trainable": true,
+          "output_schema": "legal-draft-v1",
+          "prompt_version": "grounded-drafting-v1",
+          "verification_version": "quoted-spans-plus-model-check-v1",
+          "destination": "local machine",
+          "deployment": "local",
+          "artifact_digest": "0edcdef34593eac1aa2be9c7d06c432dcf81945adca5eca2f27662c18f168ba0"
+        },
+        "failure": null,
+        "verification": {
+          "method": "exact_source_spans_and_second_llm_pass",
+          "same_model": true,
+          "items": [
+            {
+              "id": "2ff99b31-e7ba-4cf5-ad45-5799f6565769",
+              "supported": true,
+              "reason": "Matches cited obligations and effective date; no factual assertion beyond user input."
+            }
+          ],
+          "prompt_sha256": "164a203795c1d315a4c696f99e64361cd17c58eacc71d9159341f33918883cf2"
+        },
+        "retrieval": {
+          "method": "bm25-lsa-rrf-v1",
+          "case_chunks_available": 1,
+          "authority_chunks_available": 0,
+          "selected_evidence_chunks": 2,
+          "selected_authority_chunks": 0,
+          "style_examples": 0,
+          "context_characters": 687,
+          "scope": "Relevant excerpts from selected case sources and jurisdiction-filtered tenant authorities. Style examples are not factual or legal evidence. No external legal database."
+        },
+        "needs_verification": false,
+        "context_document_id": "61100a9e-0b53-4645-a37e-2f2be7c9e11f",
+        "acknowledged_requirement_ids": []
+      }
+    }
+  },
+  "models": [
+    {
+      "id": "leximind-review",
+      "workflow": "review",
+      "version": "qwen3:4b-instruct",
+      "kind": "local_llm",
+      "provider": "ollama",
+      "available": true,
+      "trainable": true,
+      "output_schema": "review-report-v2",
+      "prompt_version": "review-reasoning-v1",
+      "verification_version": "quoted-spans-plus-model-check-v1",
+      "destination": "local machine",
+      "deployment": "local",
+      "topic_classifier": {
+        "id": "leximind-review",
+        "workflow": "review",
+        "version": "extractive-baseline-v1",
+        "kind": "extractive_rules",
+        "available": true,
+        "trainable": true,
+        "labels": [
+          "payment",
+          "termination",
+          "parties",
+          "governing_law",
+          "missing_material",
+          "other"
+        ],
+        "output_schema": "review-report-v1"
+      }
+    },
+    {
+      "id": "leximind-drafting",
+      "workflow": "drafting",
+      "version": "qwen3:4b-instruct",
+      "kind": "local_llm",
+      "provider": "ollama",
+      "available": true,
+      "trainable": true,
+      "output_schema": "legal-draft-v1",
+      "prompt_version": "grounded-drafting-v1",
+      "verification_version": "quoted-spans-plus-model-check-v1",
+      "destination": "local machine",
+      "deployment": "local"
+    },
+    {
+      "id": "leximind-research",
+      "workflow": "research",
+      "version": "qwen3:4b-instruct",
+      "kind": "local_llm",
+      "provider": "ollama",
+      "available": true,
+      "trainable": true,
+      "output_schema": "research-memo-v1",
+      "prompt_version": "grounded-research-v1",
+      "verification_version": "quoted-spans-plus-model-check-v1",
+      "destination": "local machine",
+      "deployment": "local"
+    },
+    {
+      "id": "leximind-chat",
+      "workflow": "chat",
+      "version": "qwen3:4b-instruct",
+      "kind": "local_llm",
+      "provider": "ollama",
+      "available": true,
+      "trainable": true,
+      "output_schema": "grounded-chat-v1",
+      "prompt_version": "grounded-chat-v1",
+      "verification_version": "quoted-spans-plus-model-check-v1",
+      "destination": "local machine",
+      "deployment": "local"
+    },
+    {
+      "id": "caselens-clause-auditor",
+      "workflow": "novelty",
+      "version": "source-integrity-audit-v1",
+      "kind": "deterministic_audit",
+      "available": true,
+      "trainable": false,
+      "output_schema": "source-integrity-audit-v1"
+    }
+  ],
+  "source_sha256": "8daf0502c10e58665f4c10ef076d9ba2682f26334e1cac482ad17ed7896cf3e7",
+  "finished_at": 1791467655.3595712
+}

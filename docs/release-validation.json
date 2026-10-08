@@ -1,0 +1,118 @@
+{
+  "recorded_at": "2026-10-08T13:59:46.354440+00:00",
+  "backend_regression": {
+    "passed": 79,
+    "warnings": 2,
+    "elapsed_seconds": 115.52,
+    "scope": "Final complete suite."
+  },
+  "subsequent_targeted_checks": [
+    {
+      "scope": "chat diagnostics and verification schema",
+      "passed": 9
+    },
+    {
+      "scope": "draft-language audit and paired evaluator",
+      "passed": 7
+    }
+  ],
+  "frontend_contract_tests": "passed",
+  "browser_checks": [
+    "Official starter PDFs loaded and parsed (53 and 15 pages)",
+    "Source passages paginated",
+    "Clause Auditor resolved stored citations",
+    "No browser console errors observed"
+  ],
+  "cloud_deployment": "not performed; Docker unavailable",
+  "qualification_baseline_victory": "not established",
+  "live_runs": {
+    "release-live-ps1.json": {
+      "finished": true,
+      "workflows": {
+        "chat": {
+          "status": "failed",
+          "seconds": 1123.61,
+          "claims": 0,
+          "draft_blocks": 0,
+          "failure": {
+            "code": "MODEL_UNAVAILABLE",
+            "message": "Cannot reach the configured model. Start Ollama or LM Studio and load the configured model.",
+            "retryable": true
+          }
+        },
+        "review": {
+          "status": "completed_with_warnings",
+          "seconds": 284.48,
+          "claims": 1,
+          "draft_blocks": 0,
+          "failure": null
+        },
+        "drafting": {
+          "status": "failed",
+          "seconds": 111.0,
+          "claims": 0,
+          "draft_blocks": 0,
+          "failure": {
+            "code": "MODEL_INVALID_OUTPUT",
+            "message": "Draft contained an unchecked section heading.",
+            "retryable": true
+          }
+        },
+        "research": {
+          "status": "completed_with_warnings",
+          "seconds": 2.08,
+          "claims": 0,
+          "draft_blocks": 0,
+          "failure": null
+        }
+      }
+    },
+    "release-live-ps1-retest.json": {
+      "finished": true,
+      "workflows": {
+        "chat": {
+          "status": "completed_with_warnings",
+          "seconds": 66.62,
+          "claims": 0,
+          "draft_blocks": 0,
+          "failure": null
+        },
+        "drafting": {
+          "status": "completed_with_warnings",
+          "seconds": 291.44,
+          "claims": 0,
+          "draft_blocks": 1,
+          "failure": null
+        }
+      }
+    },
+    "release-chat-final.json": {
+      "finished": true,
+      "workflows": {
+        "chat": {
+          "status": "completed_with_warnings",
+          "seconds": 211.11,
+          "claims": 0,
+          "draft_blocks": 0,
+          "failure": null
+        }
+      }
+    },
+    "release-chat-attributed.json": {
+      "finished": true,
+      "workflows": {
+        "chat": {
+          "status": "completed_with_warnings",
+          "seconds": 96.19,
+          "claims": 0,
+          "failure": null
+        }
+      }
+    }
+  },
+  "remaining_limitations": [
+    "Real-model chat abstained on the simple synthetic contract fixture despite retrieved evidence; model usefulness requires further tuning and independent evaluation.",
+    "No unseen strong-baseline victory has been established.",
+    "Cloud packaging was not deployed or built on this laptop."
+  ]
+}

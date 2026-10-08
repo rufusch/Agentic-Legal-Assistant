@@ -1,0 +1,1 @@
+{"id": "release-chat", "split": "development_smoke", "question": "Who must pay whom? Return one concise supported statement only.", "sources": [{"id": "E1", "text": "SYNTHETIC TEST CONTRACT. Example Buyer must pay Example Supplier INR 5000 within ten days of invoice."}], "gold_source_ids": ["E1"], "answerable": true}
