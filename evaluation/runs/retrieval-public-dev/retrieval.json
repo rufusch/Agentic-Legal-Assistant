@@ -1,0 +1,128 @@
+{
+  "dataset": "evaluation/datasets/public_dev.jsonl",
+  "dataset_sha256": "cfc6bf0900c8dcf9124768de9c7ce076d1d965ff57724f896793bf99e933b65b",
+  "split": "all",
+  "queries": 13,
+  "query_ids": [
+    "ica-remote-loss",
+    "ica-what-is-contract",
+    "ica-competence",
+    "ica-impossible-act",
+    "ica-free-consent",
+    "ica-penalty",
+    "bail-fir-police-station",
+    "bail-time-limit",
+    "bail-chargesheet-bharat",
+    "bail-added-offences",
+    "unans-trial-sentence",
+    "unans-io-name",
+    "unans-stamp-duty"
+  ],
+  "retrieval": "hybrid",
+  "retrievers": {
+    "hybrid": {
+      "all": {
+        "queries": 10,
+        "recall@5": 0.9,
+        "mrr": 0.7194,
+        "ndcg@5": 0.7562,
+        "recall@10": 0.95,
+        "ndcg@10": 0.7746
+      },
+      "dev": {
+        "queries": 7,
+        "recall@5": 0.8571,
+        "mrr": 0.6706,
+        "ndcg@5": 0.7044,
+        "recall@10": 0.9286,
+        "ndcg@10": 0.7308
+      },
+      "heldout": {
+        "queries": 3,
+        "recall@5": 1.0,
+        "mrr": 0.8333,
+        "ndcg@5": 0.877,
+        "recall@10": 1.0,
+        "ndcg@10": 0.877
+      }
+    },
+    "bm25": {
+      "all": {
+        "queries": 10,
+        "recall@5": 0.9,
+        "mrr": 0.7292,
+        "ndcg@5": 0.7631,
+        "recall@10": 0.95,
+        "ndcg@10": 0.7824
+      },
+      "dev": {
+        "queries": 7,
+        "recall@5": 0.8571,
+        "mrr": 0.7083,
+        "ndcg@5": 0.733,
+        "recall@10": 0.9286,
+        "ndcg@10": 0.7606
+      },
+      "heldout": {
+        "queries": 3,
+        "recall@5": 1.0,
+        "mrr": 0.7778,
+        "ndcg@5": 0.8333,
+        "recall@10": 1.0,
+        "ndcg@10": 0.8333
+      }
+    },
+    "dense": {
+      "all": {
+        "queries": 10,
+        "recall@5": 0.9,
+        "mrr": 0.6833,
+        "ndcg@5": 0.7274,
+        "recall@10": 0.95,
+        "ndcg@10": 0.7451
+      },
+      "dev": {
+        "queries": 7,
+        "recall@5": 0.8571,
+        "mrr": 0.6429,
+        "ndcg@5": 0.682,
+        "recall@10": 0.9286,
+        "ndcg@10": 0.7073
+      },
+      "heldout": {
+        "queries": 3,
+        "recall@5": 1.0,
+        "mrr": 0.7778,
+        "ndcg@5": 0.8333,
+        "recall@10": 1.0,
+        "ndcg@10": 0.8333
+      }
+    },
+    "bm25_plain": {
+      "all": {
+        "queries": 10,
+        "recall@5": 0.9,
+        "mrr": 0.7292,
+        "ndcg@5": 0.7631,
+        "recall@10": 0.95,
+        "ndcg@10": 0.7824
+      },
+      "dev": {
+        "queries": 7,
+        "recall@5": 0.8571,
+        "mrr": 0.7083,
+        "ndcg@5": 0.733,
+        "recall@10": 0.9286,
+        "ndcg@10": 0.7606
+      },
+      "heldout": {
+        "queries": 3,
+        "recall@5": 1.0,
+        "mrr": 0.7778,
+        "ndcg@5": 0.8333,
+        "recall@10": 1.0,
+        "ndcg@10": 0.8333
+      }
+    }
+  }
+}

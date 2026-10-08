@@ -9,6 +9,17 @@ from pathlib import Path
 from backend.chat import Answer
 from backend.models.review_llm import LocalReviewLLM
 from scripts.evaluate_grounding import evaluate
+from backend.retrieval import terms
+
+
+def best_span(claim,text):
+    """(start, end) of the source sentence sharing the most terms with the claim."""
+    import re
+    spans=[m.span() for m in re.finditer(r'[^.!?\n]+[.!?]?',text) if m.group().strip()] or [(0,len(text))]
+    want=set(terms(claim))
+    start,end=max(spans,key=lambda s:(len(want&set(terms(text[s[0]:s[1]]))),-s[0]))
+    while text[start].isspace():start+=1
+    return start,end
 
 
 def main():
@@ -20,8 +31,12 @@ def main():
     model=LocalReviewLLM.from_env();started=time.monotonic()
     messages=[{'role':'system','content':'Answer the question concisely using the supplied retrieved source only. Return a single proposition with source_ids. Do not invent facts or citations.'}, {'role':'user','content':json.dumps({'question':question,'sources':[{'source_id':'E1','text':text}]})}]
     raw=Answer.model_validate(model.complete(messages,Answer.model_json_schema()))
-    def citation(ref):return {'source_id':ref,'quote':text if ref=='E1' else ''}
-    baseline={'id':'release-chat','arm':'baseline','retrieved_source_ids':['E1'],'claims':[{'text':i.text,'citations':[citation(r) for r in i.source_ids]} for i in raw.propositions]}
+    # A whole-source quote is trivially a substring (traceability always 1.0). Cite only the single source
+    # sentence that best matches the claim, so the numeric guard and span checks test something real.
+    def citation(claim,ref):
+        if ref!='E1':return {'source_id':ref,'quote':''}
+        start,end=best_span(claim,text);return {'source_id':ref,'quote':text[start:end],'start_offset':start,'end_offset':end}
+    baseline={'id':'release-chat','arm':'baseline','retrieved_source_ids':['E1'],'claims':[{'text':i.text,'citations':[citation(i.text,r) for r in i.source_ids]} for i in raw.propositions]}
     cits={c['id']:c for c in chat['citations']}
     verified={'id':'release-chat','arm':'verified','retrieved_source_ids':['E1'],'claims':[{'text':c['text'],'citations':[{'source_id':'E1','quote':cits[r]['quoted_text']} for r in c['citation_ids']]} for c in chat['claims']]}
     from backend.grounding import material_values_supported

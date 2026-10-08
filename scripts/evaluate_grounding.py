@@ -14,9 +14,12 @@ from backend.grounding import material_values_supported
 def load(path): return [json.loads(l) for l in Path(path).read_text(encoding='utf-8-sig').splitlines() if l.strip()]
 
 
+JUDGE_WEIGHT={'supported':1.0,'partially_supported':.5,'unsupported':0.0,'fabricated':0.0}
+
+
 def score(query,prediction):
     sources={s['id']:s for s in query['sources']};claims=prediction.get('claims',[])
-    traced=0;invalid=0;value_errors=0;support=[];unknown=0
+    traced=0;invalid=0;value_errors=0;support=[];unknown=0;judged=[];fabricated=0
     for claim in claims:
         refs=claim.get('citations',[]);valid=bool(refs);quotes=[]
         for ref in refs:
@@ -29,13 +32,15 @@ def score(query,prediction):
             if okay:quotes.append(quote)
         values=material_values_supported(claim['text'],quotes);value_errors+=not values
         traced+=valid and values
+        label=claim.get('judge_label')
+        if label in JUDGE_WEIGHT:judged.append(JUDGE_WEIGHT[label]);fabricated+=label=='fabricated'
         annotation=claim.get('human_supported')
         if isinstance(annotation,bool):support.append(annotation)
         else:unknown+=1
     gold=set(query.get('gold_source_ids',[]));retrieved=set(prediction.get('retrieved_source_ids',[]))
     return {'id':query['id'],'claim_count':len(claims),'traceable_claims':traced,'traceability':traced/len(claims) if claims else None,
         'invalid_citations':invalid,'material_value_failures':value_errors,'semantic_groundedness':mean(support) if support and not unknown else None,
-        'unjudged_claims':unknown,'retrieval_recall':len(gold&retrieved)/len(gold) if gold else None,
+        'unjudged_claims':unknown,'judge_groundedness':mean(judged) if judged and len(judged)==len(claims) else None,'judge_fabricated':fabricated,'retrieval_recall':len(gold&retrieved)/len(gold) if gold else None,
         'retrieval_precision':len(gold&retrieved)/len(retrieved) if retrieved and gold else None,
         'answered':bool(claims),'answerable':query.get('answerable',True),
         'abstention_correct':not claims if not query.get('answerable',True) else None,
@@ -61,6 +66,8 @@ def evaluate(dataset,predictions,baseline='baseline',proposed='verified'):
         arms[arm]={'queries':len(rows),'claims':count,'quote_traceability':traced/count if count else None,
             'semantic_groundedness':mean(semantic) if semantic and None not in semantic else None,
             'answer_coverage':sum(r['answered'] for r in rows if r['answerable'])/max(1,sum(r['answerable'] for r in rows)),
+            'judge_groundedness':(lambda xs:mean(xs) if xs and None not in xs else None)([r['judge_groundedness'] for r in rows if r['claim_count']]),
+            'judge_fabricated':sum(r['judge_fabricated'] for r in rows),
             'invalid_citations':sum(r['invalid_citations'] for r in rows),'material_value_failures':sum(r['material_value_failures'] for r in rows),
             'mean_retrieval_recall':mean([r['retrieval_recall'] for r in rows if r['retrieval_recall'] is not None]) if any(r['retrieval_recall'] is not None for r in rows) else None,'rows':rows}
     b=arms[baseline]['quote_traceability'];p=arms[proposed]['quote_traceability']
