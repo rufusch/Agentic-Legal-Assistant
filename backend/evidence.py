@@ -19,6 +19,10 @@ class Citation(BaseModel):
     start_offset: int | None = Field(default=None, ge=0)
     end_offset: int | None = Field(default=None, ge=0)
     source_url: str | None = None
+    source_sha256: str | None = None
+    retrieved_at: str | None = None
+    snapshot_date: str | None = None
+    retrieval_mode: str | None = None
     jurisdiction: str | None = None
     court: str | None = None
     decided_at: str | None = None

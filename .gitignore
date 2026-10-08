@@ -32,3 +32,6 @@ integration/*.zip
 evaluation/runs/
 training/output/
 .claude/
+.venv-training/
+.venv-download/
+/runs/

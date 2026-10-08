@@ -1,5 +1,7 @@
 # CaseLens · Problem Statement 1 delivery
 
+Official government/court PDF grounding is enabled by default. Research can fetch sources from the bundled catalog or import a specific official PDF URL; citations retain source links, exact passages and provenance. [Coverage and usage](docs/OFFICIAL-SOURCES.md). The full local Qwen 4B domain-training pipeline is checkpointed and separate from production model activation: [training and resume guide](docs/FULL-DATASET-TRAINING.md).
+
 ## Start in GitHub Codespaces
 
 Add `GROQ_API_KEY` as a Codespaces secret with access to this repository. Create a Codespace from `codex/ps1-delivery`; dependencies install automatically. Run `bash scripts/start-codespaces.sh`, open port **8000**, and paste the terminal's eight-hour session token into **Connect to CaseLens**. Keep the forwarded port private. [Full Codespaces instructions](docs/CODESPACES.md).

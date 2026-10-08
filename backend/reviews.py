@@ -1,3 +1,4 @@
+from backend.official_sources import citation_source_text
 import json
 import time
 import os
@@ -59,6 +60,17 @@ def install(app, store, worker, get, envelope, APIError, idempotent, *, review_e
             update_progress('understanding',.05,'Loading parsed document evidence')
             documents = [get(tenant, 'document', rid) for rid in report['source_document_ids']]
             chunks = [c for c in store.all(tenant, 'chunk') if c['document_id'] in report['source_document_ids']]
+            official=app.state.official_sources
+            if official.enabled and engine=='llm' and report.get('options',{}).get('compare_with_governing_law'):
+                lookup=official.enrich(tenant,report['focus_question'],lambda:worker.cancelled(tenant,job_id))
+                from backend.retrieval import search
+                authorities=official.current_documents(tenant)
+                authority_ids={d['id'] for d in authorities}
+                additions=search([c for c in store.all(tenant,'chunk') if c['document_id'] in authority_ids],report['focus_question'],6)
+                documents=list({d['id']:d for d in [*documents,*authorities]}.values())
+                chunks=list({c['id']:c for c in [*chunks,*additions]}.values())
+                report['source_document_ids']=list(dict.fromkeys([*report['source_document_ids'],*[c['document_id'] for c in additions]]))
+                report['model']['official_source_retrieval']=lookup
             requested_version=report['model']['version']
             if engine=='llm':
                 result=analyze(report,documents,chunks,llm,lambda:worker.cancelled(tenant,job_id),update_progress,verify_llm=checker)
@@ -141,7 +153,7 @@ def install(app, store, worker, get, envelope, APIError, idempotent, *, review_e
             lines.append(section.replace('_',' ').title())
             for item in report.get(section,[]):
                 if section == 'citations':
-                    lines.append(f'[{item["label"]}] {item["document_name"]}, page {item.get("page") or "body"}, offsets {item["start_offset"]}:{item["end_offset"]}: {item["quoted_text"]}')
+                    lines.append(f'[{item["label"]}] {item["document_name"]}, page {item.get("page") or "body"}, offsets {item["start_offset"]}:{item["end_offset"]}: {item["quoted_text"]}'+citation_source_text(item))
                 else: lines.append(json.dumps(item,ensure_ascii=False))
         stream = BytesIO()
         if format == 'json': content, media = json.dumps(report,indent=2), 'application/json'

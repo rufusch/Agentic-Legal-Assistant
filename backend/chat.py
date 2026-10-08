@@ -1,3 +1,4 @@
+from backend.official_sources import citation_provenance
 """Independent, source-grounded RAG Chat with durable tenant-scoped jobs."""
 from backend.grounding import material_values_supported
 import json
@@ -17,6 +18,7 @@ from backend.evidence import EvidenceBundle
 from backend.research_schema import Checks
 from backend.retrieval import search
 from backend.review_engine import warning
+from backend.context_budget import source_budget
 
 BUDGET = 18000
 
@@ -148,13 +150,23 @@ def install(app, store, worker, get, envelope, APIError, idempotent, chat_llm=No
             convo = store.get(tenant, 'conversation', message['conversation_id']) or {}
             history = sorted([m for m in store.all(tenant, 'chat_message') if m['conversation_id']==message['conversation_id'] and m['created_at'] < message['created_at'] and m['status'] in TERMINAL], key=lambda m:m['created_at'])[-6:]
             query, followup = retrieval_query(question, history)
+            official=app.state.official_sources
+            official_result=official.enrich(tenant,query,cancelled)
+            if official.enabled:
+                # User documents remain fact/context evidence. Only verified imports supply law.
+                current=official.current_documents(tenant);current_ids={d['id'] for d in current}
+                documents=[d for d in documents if d['metadata'].get('document_type') not in {'statute','judgment','secondary'} or d['id'] in current_ids]
+                documents += [d for d in current if d['id'] not in {v['id'] for v in documents}]
+                ids={d['id'] for d in documents}
+                message['source_document_ids']=sorted(ids)
             pool = [c for c in store.all(tenant, 'chunk') if c['document_id'] in ids]
-            chunks = []; size = 0
+            chunks = []; size = 0;budget=source_budget(llm,BUDGET)
             for c in search(pool, query, 10):
-                if size + len(c['text']) <= BUDGET: chunks.append(c); size += len(c['text'])
+                if size + len(c['text']) <= budget: chunks.append(c); size += len(c['text'])
             info = agent.verification_info(llm, checker); independent = info['independent_verifier']
             message.update(claims=[], citations=[], warnings=[], agent_trace=[], verification={**info,'method':'exact_source_spans_and_second_llm_pass','items':[]}, retrieval={'chunk_ids':[c['id'] for c in chunks], 'context_characters':size, 'query':query, 'followup':followup})
             docs = {d['id']:d for d in documents}; accepted = []; messages = None
+            message['retrieval']['official_sources']=official_result
             if chunks:
                 status = llm.status()
                 if not status['ready']: raise ReviewModelError(status['reason'], status['message'])
@@ -188,7 +200,7 @@ def install(app, store, worker, get, envelope, APIError, idempotent, chat_llm=No
                         out[item['id']] = {'supported':bool(ok), 'reason':reason, 'authority_ok':valid_authority if item['kind']=='legal' else None}
                         message['verification']['items'].append({'id':item['id'],'supported':bool(ok),'reason':reason,'source_ids_valid':valid_refs,'material_values_present':valid_values,'authority_type_valid':valid_authority})
                     return out
-                result = agent.run(question=query, documents=documents, chunks=chunks, pool=pool, budget=BUDGET, propose=propose, check=check, cancelled=cancelled, progress=progress)
+                result = agent.run(question=query, documents=documents, chunks=chunks, pool=pool, budget=budget, propose=propose, check=check, cancelled=cancelled, progress=progress)
                 catalog = result['catalog']; chunks = result['chunks']; messages = result['messages']; message['agent_trace'] = result['trace']
                 message['retrieval']['chunk_ids'] = [c['id'] for c in chunks]
                 citations = {}
@@ -197,7 +209,7 @@ def install(app, store, worker, get, envelope, APIError, idempotent, chat_llm=No
                     for ref in refs:
                         entry = catalog[ref]; c = entry['chunk']; d = docs[c['document_id']]
                         if ref not in citations:
-                            citations[ref] = {'id':uid(),'label':f'S{len(citations)+1}','document_id':d['id'],'document_name':d['name'],'chunk_id':c['id'],'quoted_text':entry['quote'],'page':c.get('page'),'section':c.get('section'),'start_offset':c['start_offset']+entry['offset'],'end_offset':c['start_offset']+entry['offset']+len(entry['quote'])}
+                            citations[ref] = {'id':uid(),'label':f'S{len(citations)+1}','document_id':d['id'],'document_name':d['name'],'chunk_id':c['id'],'quoted_text':entry['quote'],'page':c.get('page'),'section':c.get('section'),'start_offset':c['start_offset']+entry['offset'],'end_offset':c['start_offset']+entry['offset']+len(entry['quote']),**citation_provenance(d)}
                         cids.append(citations[ref]['id'])
                     score, why = agent.claim_confidence(refs, catalog, docs, independent=independent, first_round=row['round']==1, authority_ok=row['verdict'].get('authority_ok'))
                     message['claims'].append({'id':item['id'],'text':item['text'],'citation_ids':cids,'verification_status':agent.claim_status(independent, bool(cids)),'confidence':score,'warning':('Independent-model' if independent else 'Same-model')+f' support check (round {row["round"]}); confidence: {why}. Human review required.'})
@@ -208,6 +220,11 @@ def install(app, store, worker, get, envelope, APIError, idempotent, chat_llm=No
             if any(d.get('ocr_used') for d in documents): message['warnings'].append(warning('ocr_quality','OCR source','Selected sources include OCR text; verify against the original scan.'))
             retried = sum(t['round']>1 and t['accepted'] for t in message['agent_trace'])
             message.update(status='completed_with_warnings', confidence=agent.overall(message['claims'], independent, retried))
+            if official_result.get('enabled'):
+                message['warnings'].append(warning('weak_authority','Official source coverage','Official URL discovery is limited; current law and subsequent case treatment are not certified.','info'))
+                if official_result.get('failures'):message['warnings'].append(warning('partial_processing','Official retrieval failures',f"{len(official_result['failures'])} official source retrieval(s) failed; unavailable sources were excluded."))
+                if any(s.get('retrieval_mode')=='dated_official_snapshot' for s in official_result.get('sources',[])):
+                    message['warnings'].append(warning('weak_authority','Dated official snapshot','Live retrieval failed for a source; inspect its citation snapshot date.'))
             bundle = EvidenceBundle(claims=message['claims'], citations=message['citations'], warnings=message['warnings'])
             by_id = {c['id']:c for c in chunks}; bundle.validate_source_spans(lambda d,c:by_id[c])
             with store.transaction():

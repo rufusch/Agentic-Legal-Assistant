@@ -74,6 +74,36 @@ def _json_from_text(text):
         return json.loads(text[start:text.rfind('}' if text[start] == '{' else ']') + 1])
 
 
+def compact_source_metadata(messages):
+    """Lossless metadata dictionaries; never remove/shorten source text or evidence IDs."""
+    def compact(value):
+        if isinstance(value,list):return [compact(v) for v in value]
+        if not isinstance(value,dict):return value
+        result={k:compact(v) for k,v in value.items()}
+        sources=result.get('sources')
+        if not isinstance(sources,list) or not sources or not all(isinstance(s,dict) for s in sources):return result
+        if 'source_documents' in result or any('document_ref' in s for s in sources):return result
+        metadata_keys={'document_name','document_type','jurisdiction','user_provided','source_url','document_id','page'}
+        documents={};lookup={};packed=[]
+        for source in sources:
+            meta={k:v for k,v in source.items() if k in metadata_keys}
+            if not meta:packed.append(source);continue
+            identity=json.dumps(meta,sort_keys=True)
+            if identity not in lookup:
+                key='D'+str(len(lookup)+1);lookup[identity]=key;documents[key]=meta
+            packed.append({**{k:v for k,v in source.items() if k not in metadata_keys},'document_ref':lookup[identity]})
+        if documents:
+            result['sources']=packed;result['source_documents']=documents
+            result['source_encoding']='Each source inherits all metadata from source_documents[document_ref]. Source IDs and quoted text are unchanged.'
+        return result
+    output=[]
+    for message in messages:
+        try:value=json.loads(message['content'])
+        except (ValueError,TypeError,KeyError):output.append(message);continue
+        output.append({**message,'content':json.dumps(compact(value),ensure_ascii=False,separators=(',',':'))})
+    return output
+
+
 @dataclass(frozen=True)
 class LocalReviewLLM:
     provider: str = 'ollama'
@@ -108,7 +138,7 @@ class LocalReviewLLM:
             deployment='cloud' if hosted or not local_url else os.getenv('LEXIMIND_MODEL_DEPLOYMENT', 'local'), api_key=key or '',
             allow_private_http=os.getenv('LEXIMIND_MODEL_ALLOW_HTTP') == '1',
             num_threads=int(os.environ['LEXIMIND_MODEL_NUM_THREADS']) if os.getenv('LEXIMIND_MODEL_NUM_THREADS') else None,
-            max_output_tokens=int(os.getenv('LEXIMIND_MODEL_MAX_OUTPUT_TOKENS', '4000')),
+            max_output_tokens=int(os.getenv('LEXIMIND_MODEL_MAX_OUTPUT_TOKENS', '1500' if provider=='groq' and role not in {'verifier','judge'} else '4000')),
             timeout_seconds=int(os.getenv('LEXIMIND_MODEL_TIMEOUT_SECONDS', '900')), role=role)
         values.update(overrides)
         return cls(**values)
@@ -169,6 +199,7 @@ class LocalReviewLLM:
 
     async def _complete(self,messages,schema,cancelled):
         if cancelled(): raise ReviewCancelled()
+        if self.provider=='groq':messages=compact_source_metadata(messages)
         path=self._url('chat')
         if self.provider=='ollama':
             options={'temperature':0,'num_ctx':16384,'num_predict':self.max_output_tokens}
@@ -189,7 +220,7 @@ class LocalReviewLLM:
             else:
                 payload['response_format']={'type':'json_schema','json_schema':{'name':'structured_output','strict':self.provider not in PRESETS or self.provider=='openai','schema':schema}}
         async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout_seconds,connect=5),trust_env=False,transport=self.transport,headers=self.headers) as client:
-            async def fetch():
+            async def fetch(rate_attempt=0):
                 # Server-configured URL; no redirects, proxies, tools or document URLs are followed.
                 async with client.stream('POST',path,json=payload) as response:
                     if response.status_code==400 and self.provider not in {'ollama','anthropic'} and payload.get('response_format',{}).get('type')=='json_schema':
@@ -197,9 +228,11 @@ class LocalReviewLLM:
                         await response.aread()
                         payload['response_format']={'type':'json_object'}
                         payload['messages']=messages+[{'role':'user','content':'Return only JSON matching this schema: '+json.dumps(schema)}]
-                        return await fetch()
+                        return await fetch(rate_attempt)
                     if response.status_code in (401,403):
                         raise ReviewModelError('MODEL_AUTH_FAILED','The configured model rejected its API key.',False)
+                    if response.status_code==413:
+                        raise ReviewModelError('MODEL_CONTEXT_LIMIT','Provider request-size limit exceeded. Reduce LEXIMIND_SOURCE_CONTEXT_CHARACTERS or use a model/account with a larger request allowance.',False)
                     if response.status_code==429:
                         if self.provider=='gemini':
                             await response.aread()
@@ -223,6 +256,11 @@ class LocalReviewLLM:
                             if 'tokens per day' in message or 'requests per day' in message:
                                 raise ReviewModelError('MODEL_QUOTA_EXHAUSTED',
                                     'Groq daily quota cannot fit this request. Use another configured model or increase the project quota.', False)
+                            try:retry_after=float(response.headers.get('retry-after','nan'))
+                            except ValueError:retry_after=float('nan')
+                            if rate_attempt<2 and 0<=retry_after<=60:
+                                await asyncio.sleep(max(.1,retry_after))
+                                return await fetch(rate_attempt+1)
                         raise ReviewModelError('MODEL_RATE_LIMITED','The configured model is rate limited; retry shortly.')
                     if response.status_code in (500,502,503,504):
                         raise ReviewModelError('MODEL_OVERLOADED',f'Model service temporarily failed (HTTP {response.status_code}, {self.provider} {self.model}). Retry shortly.')

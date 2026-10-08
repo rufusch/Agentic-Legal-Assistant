@@ -1,3 +1,4 @@
+from backend.official_sources import citation_provenance
 """Research synthesis with an agentic retry loop, a (preferably independent) support check and exact source anchors."""
 from backend.grounding import material_values_supported
 import json
@@ -87,7 +88,7 @@ def synthesize(memo, documents, chunks, llm, cancelled, progress, verify_llm=Non
             for r in refs:
                 ref=catalog[r];chunk=ref['chunk'];doc=docs[chunk['document_id']]
                 if r not in citations:
-                    citations[r]={'id':uid(),'label':f'S{len(citations)+1}','document_id':doc['id'],'document_name':doc['name'],'chunk_id':chunk['id'],'quoted_text':ref['quote'],'page':chunk.get('page'),'section':chunk.get('section'),'start_offset':chunk['start_offset']+ref['offset'],'end_offset':chunk['start_offset']+ref['offset']+len(ref['quote'])}
+                    citations[r]={'id':uid(),'label':f'S{len(citations)+1}','document_id':doc['id'],'document_name':doc['name'],'chunk_id':chunk['id'],'quoted_text':ref['quote'],'page':chunk.get('page'),'section':chunk.get('section'),'start_offset':chunk['start_offset']+ref['offset'],'end_offset':chunk['start_offset']+ref['offset']+len(ref['quote']),**citation_provenance(doc)}
                 cid=citations[r]['id'];ids.append(cid)
                 (law_ids if doc['metadata'].get('document_type') in LAW else fact_ids).append(cid)
             return ids,fact_ids,law_ids
@@ -133,6 +134,12 @@ def synthesize(memo, documents, chunks, llm, cancelled, progress, verify_llm=Non
         # Export only the sanitized, published target, never unchecked proposals.
         memo['training_candidate']={'messages':messages,'target':{'propositions':[{k:i[k] for k in ('section','text','source_ids')} for i in accepted],'limitations':[]}}
     else: limitations.append('Upload relevant statutes or judgments before requesting a substantive legal answer.')
+    official=memo.get('retrieval',{}).get('official_sources',{})
+    if official.get('enabled'):
+        limitations.append('Official URL catalog discovery is limited; source currency and subsequent case treatment are not certified.')
+        if official.get('failures'):limitations.append(f"{len(official['failures'])} official source retrieval(s) failed; unavailable sources were not used.")
+        if any(s.get('retrieval_mode')=='dated_official_snapshot' for s in official.get('sources',[])):
+            limitations.append('A dated official snapshot was used because live retrieval failed; inspect the citation snapshot date.')
     memo['limitations']=limitations
     memo['warnings']=[warning('weak_authority','Research coverage limits',' '.join(limitations))]
     memo['status']='completed_with_warnings'

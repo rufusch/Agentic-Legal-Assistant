@@ -1,4 +1,4 @@
-import { LegalApiClient } from '../api/api-client.js';
+import { LegalApiClient, request } from '../api/api-client.js';
 import { ResearchApi } from '../api/research-api.js';
 import { renderCitationBadge } from '../components/shared-ui.js';
 import { Icons } from '../components/icons.js';
@@ -52,6 +52,14 @@ export class ResearchView {
         <section class="card rv-card">
           <h3 class="supplied-726cf47beb">2. Context Documents (Optional)</h3>
           <p class="rv-help supplied-726cf47beb">Select case files or upload new ones.</p>
+          <p class="rv-help">Relevant official documents are fetched from the source catalog during research. Coverage is limited; you can add a specific government or court PDF below.</p>
+          <label class="rv-label">Official PDF or India Code page URL</label>
+          <input id="official-url" class="input" type="url" placeholder="https://www.indiacode.nic.in/…" />
+          <label class="rv-label">Source title</label>
+          <input id="official-title" class="input" maxlength="200" placeholder="Act or case name" />
+          <select id="official-kind" class="input"><option value="statute">Statute</option><option value="judgment">Judgment</option></select>
+          <button id="official-import" type="button" class="btn btn-secondary">Fetch official source</button>
+          <p id="official-status" role="status"></p>
           <div id="res-docs-list" class="supplied-791e8d4d21">
             <div class="btn-spinner"></div>
           </div>
@@ -71,6 +79,17 @@ export class ResearchView {
       </div>
     `;
 
+    this.el.querySelector('#official-import').onclick=async()=>{
+      const button=this.el.querySelector('#official-import'),status=this.el.querySelector('#official-status');button.disabled=true;
+      try{
+        const result=await request('official-sources/import',{method:'POST',body:{url:this.el.querySelector('#official-url').value.trim(),title:this.el.querySelector('#official-title').value.trim(),document_type:this.el.querySelector('#official-kind').value}});
+        status.textContent='Official source imported. It is available for research, drafting and chat.';
+        const doc=await LegalApiClient.getDocument(result.data.document_id);
+        this.docs.push(doc.data);
+        const label=document.createElement('label'),checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=result.data.document_id;checkbox.className='doc-cb';checkbox.checked=true;
+        label.append(checkbox,document.createTextNode(doc.data.name));this.el.querySelector('#res-docs-list').append(label);
+      }catch(e){status.textContent=e.message;}finally{button.disabled=false;}
+    };
     try {
       const res = await LegalApiClient.listDocuments({ status: 'ready' });
       this.docs = res.data;

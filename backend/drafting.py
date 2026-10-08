@@ -1,3 +1,5 @@
+from backend.official_sources import citation_source_text
+from backend.context_budget import source_budget
 """Legal Drafting API, durable workflow jobs and version/consent boundaries."""
 import hashlib
 import json
@@ -86,14 +88,18 @@ def install(app, store, worker, get, envelope, APIError, idempotent, drafting_ll
         authority_pool=[c for c in all_chunks if c['document_id'] in authority_ids or c['document_id'] in selected and docs[c['document_id']]['metadata'].get('document_type') in {'statute','judgment'}]
         # Selected authorities with conflicting explicit jurisdiction are never silently treated as governing law.
         authority_pool=[c for c in authority_pool if docs[c['document_id']]['metadata'].get('jurisdiction') in {draft['jurisdiction'],draft['jurisdiction'].split('-')[0]}]
+        if app.state.official_sources.enabled:
+            current_ids={d['id'] for d in app.state.official_sources.current_documents(tenant)}
+            authority_pool=[c for c in authority_pool if c['document_id'] in current_ids]
         authority_candidates={c['id'] for c in authority_pool}
         case_pool=[c for c in case_pool if docs[c['document_id']]['metadata'].get('document_type') not in {'statute','judgment'}]
         chosen=[c for c in all_chunks if c['document_id']==intake['id']]
         ranked=[*search(case_pool,query,12),*search(authority_pool,query,10)]
         used=sum(len(c['text']) for c in chosen)
-        if used>24000:raise ReviewModelError('DRAFT_CONTEXT_LIMIT','Intake exceeds the 24,000-character drafting context budget.',False)
+        budget=source_budget(llm,24000)
+        if used>budget:raise ReviewModelError('DRAFT_CONTEXT_LIMIT',f'Intake exceeds the {budget:,}-character drafting context budget. Narrow the supplied intake.',False)
         for c in ranked:
-            if used+len(c['text'])<=24000 and c['id'] not in {v['id'] for v in chosen}:chosen.append(c);used+=len(c['text'])
+            if used+len(c['text'])<=budget and c['id'] not in {v['id'] for v in chosen}:chosen.append(c);used+=len(c['text'])
         style_hits=search([c for c in all_chunks if c['document_id'] in style_ids],query,3)
         examples=[{'document_name':docs[c['document_id']]['name'],'style_only':True,'text':c['text'][:1200]} for c in style_hits]
         source_ids={c['document_id'] for c in chosen}
@@ -117,8 +123,10 @@ def install(app, store, worker, get, envelope, APIError, idempotent, drafting_ll
                 draft['warnings']=[warning('missing_information','Intake checklist scope','This is a drafting intake checklist, not a certified jurisdictional filing checklist. Supporting evidence is strongly recommended.','info')]
             else:
                 progress('retrieving',.15,'Retrieving relevant case evidence, tenant authorities and style examples')
+                official=app.state.official_sources.enrich(tenant,draft['instructions']+' '+draft['document_type'],lambda:worker.cancelled(tenant,jid))
                 with store.transaction():
                     documents,chunks,examples=retrieve(tenant,draft)
+                    draft['retrieval']['official_sources']=official
                     store.save(tenant,'draft',draft)
                 result,training=generate(draft,documents,chunks,examples,llm,lambda:worker.cancelled(tenant,jid),progress,verify_edits=job['phase']=='verify',verify_llm=checker)
                 result['model']={**result['model'],**metadata()};draft=result
@@ -247,7 +255,7 @@ def install(app, store, worker, get, envelope, APIError, idempotent, drafting_ll
             lines.append(section['heading'])
             for block in section['blocks']:lines.append(block['text']+' '+''.join('['+next(c['label'] for c in draft['citations'] if c['id']==cid)+']' for cid in block['citation_ids']))
         lines.append('Source references')
-        lines.extend(f'[{c["label"]}] {c["document_name"]}, page {c.get("page") or "body"}, offsets {c["start_offset"]}:{c["end_offset"]}: {c["quoted_text"]}' for c in draft['citations'])
+        lines.extend(f'[{c["label"]}] {c["document_name"]}, page {c.get("page") or "body"}, offsets {c["start_offset"]}:{c["end_offset"]}: {c["quoted_text"]}' +citation_source_text(c) for c in draft['citations'])
         stream=BytesIO()
         if format=='txt':content,media='\n\n'.join(lines).encode('utf-8'),'text/plain; charset=utf-8'
         elif format=='docx':

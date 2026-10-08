@@ -99,6 +99,7 @@ class Store:
     def delete_document(self, tenant, rid):
         """Caller must hold a transaction. Files are unlinked after DB commit by caller."""
         related = [r['id'] for r in self.all(tenant, 'chunk') if r['document_id'] == rid]
+        related.append('official-'+rid)
         reviews = [r['id'] for r in self.all(tenant, 'review') if rid in r['source_document_ids']]
         versions = self.all(tenant, 'draft_version')
         drafts = {d['id'] for d in self.all(tenant, 'draft') if rid in d['source_document_ids']}

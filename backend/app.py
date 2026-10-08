@@ -479,6 +479,9 @@ def create_app(storage=None, tokens=None, encryption_key=None, *, start_worker=T
                 await asyncio.sleep(.2)
         return StreamingResponse(stream(), media_type='text/event-stream', headers={'X-Accel-Buffering': 'no'})
 
+    from backend.official_sources import install as install_official
+    install_official(app,s,worker,envelope,APIError,retention)
+
     from backend.reviews import install
     install(app, s, worker, get, envelope, APIError, idempotent, review_engine=review_engine, review_llm=review_llm, verify_llm=verify_llm)
     from backend.drafting import install as install_drafting

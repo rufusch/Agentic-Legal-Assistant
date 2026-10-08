@@ -1,3 +1,4 @@
+from backend.official_sources import citation_source_text
 """Legal Research API with tenant-scoped retrieval and durable jobs."""
 import json
 from backend import agent_loop as agent
@@ -12,6 +13,7 @@ from backend.models.review_llm import LocalReviewLLM, ReviewCancelled, ReviewMod
 from backend.research_schema import CreateResearch, RefineResearch, ResearchFeedback, ResearchMemo
 from backend.research_engine import synthesize
 from backend.retrieval import search
+from backend.context_budget import source_budget
 
 def uid(): return str(uuid4())
 def now(): return datetime.now(timezone.utc).isoformat()
@@ -37,8 +39,11 @@ def install(app,store,worker,get,envelope,APIError,idempotent,research_llm=None,
         selected=set(memo['context_document_ids']);filters=memo['filters'];options=memo['options']
         if not selected<=docs.keys(): raise ReviewModelError('SOURCES_NOT_READY','A selected context source is unavailable.',False)
         authorities=set();excluded=0
+        current_official={d['id'] for d in app.state.official_sources.current_documents(tenant)} if app.state.official_sources.enabled else set()
         for rid,doc in docs.items():
             m=doc['metadata'];kind=m.get('document_type')
+            official=app.state.official_sources
+            if official.enabled and kind in {'statute','judgment','secondary'} and rid not in current_official:excluded+=1;continue
             if kind not in filters['source_types'] or kind=='secondary' and not options['include_secondary_sources']:continue
             if filters['jurisdictions'] and m.get('jurisdiction') not in filters['jurisdictions']:excluded+=1;continue
             if filters['courts'] and kind=='judgment' and m.get('court') not in filters['courts']:excluded+=1;continue
@@ -50,7 +55,7 @@ def install(app,store,worker,get,envelope,APIError,idempotent,research_llm=None,
                     if filters['date_from'] and date<Date.fromisoformat(filters['date_from']) or filters['date_to'] and date>Date.fromisoformat(filters['date_to']):excluded+=1;continue
                 except (ValueError,TypeError):excluded+=1;continue
             authorities.add(rid)
-        all_chunks=store.all(tenant,'chunk');chosen=[];used=0;logs=[];allowed=set()
+        all_chunks=store.all(tenant,'chunk');chosen=[];used=0;logs=[];allowed=set();budget=source_budget(llm,24000)
         for label,ids in [('Governing statutes',{i for i in authorities if docs[i]['metadata'].get('document_type')=='statute'}),('Precedents',{i for i in authorities if docs[i]['metadata'].get('document_type')=='judgment'}),('Secondary commentary',{i for i in authorities if docs[i]['metadata'].get('document_type')=='secondary'}),('Case context',selected-authorities)]:
             # Context cannot bypass authority filters through a selected-file checkbox.
             ids={i for i in ids if i in authorities or docs[i]['metadata'].get('document_type') not in {'statute','judgment','secondary','past_draft'}}
@@ -58,11 +63,11 @@ def install(app,store,worker,get,envelope,APIError,idempotent,research_llm=None,
             hits=search(pool,memo['question'],12 if options['depth']=='deep' else 6)
             included=[]
             for c in hits:
-                if used+len(c['text'])<=24000 and c['id'] not in {v['id'] for v in chosen}:chosen.append(c);used+=len(c['text']);included.append(c['id'])
+                if used+len(c['text'])<=budget and c['id'] not in {v['id'] for v in chosen}:chosen.append(c);used+=len(c['text']);included.append(c['id'])
             logs.append({'id':uid(),'question':label+': '+memo['question'],'status':'completed' if included else 'limited_evidence','filters':filters,'candidate_chunks':len(pool),'retrieved_chunk_ids':included,'source_document_ids':sorted(ids)})
         memo['source_document_ids']=sorted(selected|{c['document_id'] for c in chosen})
         memo['search_log']=logs;memo['sub_queries']=[{k:entry[k] for k in ('id','question','status')} for entry in logs]
-        memo['retrieval']={'context_characters':used,'excluded_by_filters':excluded,'method':'bm25-lsa-rrf-v1','maximum_context_characters':24000}
+        memo['retrieval']={'context_characters':used,'excluded_by_filters':excluded,'method':'bm25-lsa-rrf-v1','maximum_context_characters':budget}
         # The agentic retry may search only this same filter-respecting pool.
         return [docs[i] for i in {c['document_id'] for c in chosen}],chosen,[c for c in all_chunks if c['document_id'] in allowed],[docs[i] for i in allowed]
 
@@ -75,7 +80,9 @@ def install(app,store,worker,get,envelope,APIError,idempotent,research_llm=None,
                     memo['status']=stage;job.update(status=stage,progress=value)
                     store.save(tenant,'research',memo);store.save(tenant,'job',job);store.event(jid,'job.progress',status=stage,progress=value,message=message)
             progress('retrieving',.1,'Searching workspace authorities and selected case context')
+            official=app.state.official_sources.enrich(tenant,memo['question'],lambda:worker.cancelled(tenant,jid))
             documents,chunks,pool,allowed=retrieve(tenant,memo)
+            memo['retrieval']['official_sources']=official
             memo=synthesize(memo,documents,chunks,llm,lambda:worker.cancelled(tenant,jid),progress,verify_llm=checker,pool=pool,all_documents=allowed)
             documents=[d for d in allowed if d['id'] in set(memo['source_document_ids'])]
             with store.transaction():
@@ -118,7 +125,7 @@ def install(app,store,worker,get,envelope,APIError,idempotent,research_llm=None,
     @app.get('/api/v1/research')
     def listing(request:Request):return envelope(request,{'items':sorted(store.all(request.state.tenant,'research'),key=lambda m:m['created_at'],reverse=True)[:100]})
     @app.get('/api/v1/research/config')
-    def config(request:Request):return envelope(request,{**llm.status(),'model':metadata(),'external_legal_database':False})
+    def config(request:Request):return envelope(request,{**llm.status(),'model':metadata(),'external_legal_database':False,'official_source_retrieval':app.state.official_sources.enabled,'official_discovery':'catalog plus direct official PDF import; limited coverage'})
     @app.get('/api/v1/research/{rid}')
     def read(rid:UUID,request:Request):return envelope(request,get(request.state.tenant,'research',rid))
     @app.get('/api/v1/research/{rid}/search-log')
@@ -146,7 +153,7 @@ def install(app,store,worker,get,envelope,APIError,idempotent,research_llm=None,
         if memo['status'] not in {'completed','completed_with_warnings'}:raise APIError(409,'RESEARCH_NOT_READY','Complete the memo before export.')
         if format=='json':data=json.dumps(memo,ensure_ascii=False).encode();media='application/json'
         else:
-            lines=['Legal Research — working memo',memo['question'],memo['executive_summary']['text'],*[c['text'] for c in memo['claims']],*['LIMITATION: '+v for v in memo['limitations']],*[f'[{c["label"]}] {c["document_name"]}: {c["quoted_text"]}' for c in memo['citations']]];stream=BytesIO()
+            lines=['Legal Research — working memo',memo['question'],memo['executive_summary']['text'],*[c['text'] for c in memo['claims']],*['LIMITATION: '+v for v in memo['limitations']],*[f'[{c["label"]}] {c["document_name"]}: {c["quoted_text"]}' +citation_source_text(c) for c in memo['citations']]];stream=BytesIO()
             if format=='docx':
                 from docx import Document
                 doc=Document()

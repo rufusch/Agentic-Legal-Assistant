@@ -1,3 +1,4 @@
+from backend.official_sources import citation_provenance
 """Grounded drafting and fail-closed, claim-level publication checks."""
 from backend.grounding import material_values_supported
 import hashlib
@@ -143,7 +144,7 @@ def generate(draft, documents, chunks, examples, llm, cancelled=lambda:False, pr
                 for ref_id in refs:
                     ref = catalog[ref_id]; c = ref['chunk']; doc = docs[c['document_id']]
                     if ref_id not in citation_map:
-                        citation_map[ref_id]={'id':uid(),'label':f'S{len(citation_map)+1}','document_id':doc['id'],'document_name':doc['name'],'chunk_id':c['id'],'quoted_text':ref['quote'],'page':c.get('page'),'section':c.get('section'),'start_offset':c['start_offset']+ref['offset'],'end_offset':c['start_offset']+ref['offset']+len(ref['quote']),'jurisdiction':doc['metadata'].get('jurisdiction')}
+                        citation_map[ref_id]={'id':uid(),'label':f'S{len(citation_map)+1}','document_id':doc['id'],'document_name':doc['name'],'chunk_id':c['id'],'quoted_text':ref['quote'],'page':c.get('page'),'section':c.get('section'),'start_offset':c['start_offset']+ref['offset'],'end_offset':c['start_offset']+ref['offset']+len(ref['quote']),**citation_provenance(doc)}
                     block['citation_ids'].append(citation_map[ref_id]['id'])
                 block['citation_ids']=list(dict.fromkeys(block['citation_ids']))
                 if item['statement_type'] in {'fact','legal'}:
