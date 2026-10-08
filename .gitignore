@@ -31,3 +31,4 @@ node_modules/
 integration/*.zip
 evaluation/runs/
 training/output/
+.claude/
