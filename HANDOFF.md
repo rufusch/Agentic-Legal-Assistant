@@ -82,10 +82,35 @@ The pass/fail gate lives in the code. Do not weaken any of these to make a numbe
   `train_lora.py --eval-file` refuses to train when held-out ids leak in.
 - An empty answer gets **no** groundedness score. Abstention is not a perfect score.
 
+## Live-run findings (2026-10-09 00:15 IST, Windows + Groq)
+
+The first real-model attempt happened on the author's Windows machine. It did not
+finish. What it established:
+
+- **`llama-3.3-70b-versatile` is retired from Groq** (404 model_not_found). Hosted
+  roles now default to `openai/gpt-oss-120b`. Fixed in `run-eval.ps1`.
+- **PowerShell 5.1 aborts on stderr** under `ErrorActionPreference=Stop`, including
+  Python's ordinary progress output. Every run died before producing results. Fixed.
+- **The paired run never completed.** `evaluation/runs/paired/` does not exist and the
+  judge cache holds exactly one entry (one claim, judged `supported`). So the Groq
+  path works end to end for at least one claim, but something stops the run after
+  that. **Diagnosing this is the first task.** Run with `-Limit 3` and read stderr.
+- **The retrieval ablation reproduced exactly** on different hardware: `full` at
+  recall@10 1.000 / MRR 0.650, `hybrid` at 0.950 / 0.719.
+- **UNRESOLVED, and it matters for 35% of the score:** with only a Groq key, the
+  baseline, the verifier and the judge are all `openai/gpt-oss-120b` — the same
+  model grading its own output. Get a free Gemini key (aistudio.google.com/apikey)
+  and pass `-GeminiKey`; the runner already routes the judge to Gemini. If you
+  cannot, **state the limitation explicitly in the write-up** rather than quoting
+  the groundedness number as if it were independent.
+- A nested clone may exist at `agentic-legal-assistant-review/` inside the repo. It
+  is untracked and must not be committed. Delete it.
+
 ## Next actions, in order
 
-1. `.\run-eval.ps1 -GroqKey "..." -Limit 3` — the smoke run. Expect breakage: Groq may
-   reject `response_format: json_schema` (a json_object fallback exists — confirm it fires).
+1. `.\run-eval.ps1 -GroqKey "..." -Limit 3` — find why the paired run stops after the
+   first judged claim (see the live-run findings above). Groq may also reject
+   `response_format: json_schema` (a json_object fallback exists — confirm it fires).
 2. Full paired run. Read `evaluation/runs/paired/results.md`. **Fabrication must be 0.**
 3. If groundedness does not beat the baseline, say so. Do not tune on the test set.
 4. `ollama pull nomic-embed-text`, set `LEXIMIND_EMBEDDINGS=ollama`, re-run the retrieval
