@@ -77,10 +77,15 @@ def validate_final(draft, chunks):
     return result.model_dump(mode='json')
 
 
-def generate(draft, documents, chunks, examples, llm, cancelled=lambda:False, progress=lambda *a:None, verify_edits=False):
+def generate(draft, documents, chunks, examples, llm, cancelled=lambda:False, progress=lambda *a:None, verify_edits=False, verify_llm=None):
     if cancelled(): raise ReviewCancelled()
+    from backend import agent_loop as agent
+    checker = verify_llm or llm; info = agent.verification_info(llm, checker); independent = info['independent_verifier']
     status = llm.status()
     if not status['ready']: raise ReviewModelError(status['reason'],status['message'])
+    if checker is not llm:
+        vstatus = checker.status()
+        if not vstatus['ready']: raise ReviewModelError(vstatus['reason'],'Verifier model: '+vstatus['message'])
     catalog, packet = source_packet(documents,chunks)
     gaps = [r for r in draft['requirements'] if r.get('current_answer') is None or not str(r['current_answer']).strip()]
     tokens = [{'token':'['+r['key'].upper().replace('_',' ')+']','description':r['question'],'requirement_id':r['id']} for r in gaps]
@@ -110,11 +115,11 @@ def generate(draft, documents, chunks, examples, llm, cancelled=lambda:False, pr
     checking = [{'id':i['id'],'text':i['text'],'declared_type':i['statement_type'],'sources':[p for p in packet if p['source_id'] in i['source_ids']]} for i in items]
     if len(json.dumps(checking,ensure_ascii=False))>55000: raise ReviewModelError('DRAFT_CONTEXT_LIMIT','Draft verification scope is too large; shorten the requested draft.',False)
     progress('verifying',.75,'Checking every proposition against its quoted evidence')
-    try: verified = DraftVerification.model_validate(llm.complete([{'role':'system','content':CHECK},{'role':'user','content':json.dumps({'blocks':checking},ensure_ascii=False)}],verification_schema(DraftVerification,items),cancelled))
+    try: verified = DraftVerification.model_validate(checker.complete([{'role':'system','content':CHECK},{'role':'user','content':json.dumps({'blocks':checking},ensure_ascii=False)}],verification_schema(DraftVerification,items),cancelled))
     except ValidationError: raise ReviewModelError('MODEL_INVALID_VERIFICATION','Draft verification returned an invalid structure.') from None
     decisions = {str(d.id):d for d in verified.decisions}
     if len(decisions)!=len(verified.decisions) or set(decisions)!={i['id'] for i in items}: raise ReviewModelError('MODEL_INVALID_VERIFICATION','Verification omitted or duplicated draft blocks; publication blocked.')
-    result = {**draft,'sections':[],'claims':[],'citations':[],'authorities':[],'warnings':[],'unresolved_placeholders':[],'verification':{'method':'exact_source_spans_and_second_llm_pass','same_model':True,'items':[]},'needs_verification':False,'failure':None,'model':{**llm.metadata,'artifact_digest':status['model'].get('artifact_digest')}}
+    result = {**draft,'sections':[],'claims':[],'citations':[],'authorities':[],'warnings':[],'unresolved_placeholders':[],'verification':{**info,'method':'exact_source_spans_and_second_llm_pass','items':[]},'needs_verification':False,'failure':None,'model':{**llm.metadata,'artifact_digest':status['model'].get('artifact_digest')}}
     docs = {d['id']:d for d in documents}; citation_map = {}; unsupported = 0
     for section in sections:
         output = {**section,'blocks':[]}
@@ -143,7 +148,8 @@ def generate(draft, documents, chunks, examples, llm, cancelled=lambda:False, pr
                 block['citation_ids']=list(dict.fromkeys(block['citation_ids']))
                 if item['statement_type'] in {'fact','legal'}:
                     claim_id = uid(); block['claim_ids']=[claim_id]
-                    result['claims'].append({'id':claim_id,'text':block['text'],'citation_ids':block['citation_ids'],'verification_status':'partially_supported','confidence':.6,'warning':'Source-grounded model interpretation. User statements are unverified assertions; legal currency and treatment are not certified.'})
+                    score, why = agent.claim_confidence(refs, catalog, docs, independent=independent, authority_ok=True if item['statement_type']=='legal' else None)
+                    result['claims'].append({'id':claim_id,'text':block['text'],'citation_ids':block['citation_ids'],'verification_status':agent.claim_status(independent, bool(block['citation_ids'])),'confidence':score,'warning':'Source-grounded model interpretation ('+why+'). User statements are unverified assertions; legal currency and treatment are not certified.'})
             output['blocks'].append(block)
         result['sections'].append(output)
     if not any(b['verification_status']=='checked' for s in result['sections'] for b in s['blocks']): raise ReviewModelError('NO_SUPPORTED_DRAFT','No draft content passed support checks; no completed draft was published.')
@@ -163,8 +169,8 @@ def generate(draft, documents, chunks, examples, llm, cancelled=lambda:False, pr
     if unsupported:result['warnings'].append(warning('unsupported_claim','Unsupported content removed',f'{unsupported} draft blocks failed grounding checks and were replaced with visible placeholders.'))
     if result['unresolved_placeholders']:result['warnings'].append(warning('missing_information','Draft needs more information','Resolve the visible placeholders before relying on or filing this draft.'))
     result['warnings'].append(warning('weak_authority','Authority scope and currency','Only available tenant sources were searched. Supplied statutes and judgments are not certified current, binding or applicable. No external legal database was queried.'))
-    result['warnings'].append(warning('partial_processing','Model-assisted working draft','Quotes and offsets were validated in code; a second pass of the same model checked interpretations. Correlated model errors remain possible. Human legal review is required.','info'))
-    result['confidence']=confidence(.6,'Confidence concerns quoted-source support, not factual truth, filing compliance or legal correctness.')
+    result['warnings'].append(warning('partial_processing','Model-assisted working draft','Quotes and offsets were validated in code; '+('an independent verifier model checked interpretations.' if independent else 'a second pass of the same model checked interpretations. Correlated model errors remain possible.')+' Human legal review is required.','info'))
+    result['confidence']=agent.overall(result['claims'], independent) if result['claims'] else confidence(.3,'No factual or legal propositions; only checked draft language. Not a measure of filing compliance or legal correctness.')
     result['status']='completed_with_warnings'
     result['verification']['prompt_sha256']=hashlib.sha256((SYSTEM+CHECK).encode()).hexdigest()
     return validate_final(result,chunks), {'messages':messages,'target':proposed.model_dump(),'catalog':{k:v['chunk']['id'] for k,v in catalog.items()}}

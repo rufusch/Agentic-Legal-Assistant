@@ -32,13 +32,15 @@ class Feedback(BaseModel):
     annotations: list[Annotation] = Field(default_factory=list, max_length=100)
 
 
-def install(app, store, worker, get, envelope, APIError, idempotent, *, review_engine=None, review_llm=None):
+def install(app, store, worker, get, envelope, APIError, idempotent, *, review_engine=None, review_llm=None, verify_llm=None):
     models = ModelRegistry()
     app.state.models = models
     engine=review_engine or os.getenv('LEXIMIND_REVIEW_ENGINE','llm')
     if engine not in {'llm','extractive'}: raise ValueError('Invalid review engine')
     llm=review_llm or LocalReviewLLM.for_role('review')
-    app.state.review_llm, app.state.review_engine = llm, engine
+    from backend.agent_loop import verifier
+    checker=verifier(llm, verify_llm)
+    app.state.review_llm, app.state.review_engine, app.state.review_verify_llm = llm, engine, checker
 
     def model_metadata(): return llm.metadata if engine=='llm' else models.get('review').metadata
 
@@ -59,7 +61,7 @@ def install(app, store, worker, get, envelope, APIError, idempotent, *, review_e
             chunks = [c for c in store.all(tenant, 'chunk') if c['document_id'] in report['source_document_ids']]
             requested_version=report['model']['version']
             if engine=='llm':
-                result=analyze(report,documents,chunks,llm,lambda:worker.cancelled(tenant,job_id),update_progress)
+                result=analyze(report,documents,chunks,llm,lambda:worker.cancelled(tenant,job_id),update_progress,verify_llm=checker)
             else:
                 report['model']={**model_metadata(),'requested_version':requested_version}
                 result = generate(report, documents, chunks, models.get('review'), lambda: worker.cancelled(tenant, job_id))
