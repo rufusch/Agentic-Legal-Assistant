@@ -29,7 +29,14 @@ def prepare(inputs, out, shard_rows=100000):
         for path in inputs:
             state['current_input'] = str(path)
             print('Preparing ' + str(path), flush=True)
-            for batch in pq.ParquetFile(path).iter_batches(batch_size=128):
+            checkpoint()
+            parquet = pq.ParquetFile(path)
+            required = {'act_id', 'case_id', 'text', 'headnote_text',
+                        'source_pdf_s3_url', 'case_metadata_id', 'source_url'}
+            columns = [name for name in parquet.schema_arrow.names if name in required]
+            # Avoid decoding unused original-text copies and wide metadata columns.
+            # Serial decoding also bounds concurrent column buffers on small laptops.
+            for batch in parquet.iter_batches(batch_size=32, columns=columns, use_threads=False):
                 for row in batch.to_pylist():
                     state['inspected_rows'] += 1
                     item = convert(row, str(path))
