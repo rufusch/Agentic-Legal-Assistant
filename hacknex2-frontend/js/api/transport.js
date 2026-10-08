@@ -14,7 +14,9 @@ export function createApiClient({ baseUrl, getToken }) {
     headers.set('Authorization', `Bearer ${await getToken()}`);
     if (body !== undefined && !raw) headers.set('Content-Type', 'application/json');
     if (idempotencyKey) headers.set('Idempotency-Key', idempotencyKey);
-    const response = await fetch(endpoint(path), { method, headers, body: body === undefined ? undefined : raw ? body : JSON.stringify(body), signal, credentials: 'omit', redirect: 'error' });
+    // Private Codespaces forwarding authenticates with a same-origin cookie.
+    // Keep it for the hosting proxy alongside the application's bearer token.
+    const response = await fetch(endpoint(path), { method, headers, body: body === undefined ? undefined : raw ? body : JSON.stringify(body), signal, credentials: 'same-origin', redirect: 'error' });
     if (!response.ok) {
       const result = await response.json().catch(() => ({}));
       throw new ApiError(response.status, result.error || { code: 'HTTP_ERROR', message: `Request failed (${response.status})`, field_errors: [] });

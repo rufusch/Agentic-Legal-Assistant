@@ -5,7 +5,7 @@ globalThis.sessionStorage={getItem:key=>key==='caselens.session'?'test-token':nu
 const calls=[];
 const respond=data=>new Response(JSON.stringify({data}),{headers:{'Content-Type':'application/json'}});
 let handler;
-globalThis.fetch=async(url,options)=>{calls.push({url:String(url),options});assert.equal(options.headers.get('Authorization'),'Bearer test-token');return handler(String(url),options);};
+globalThis.fetch=async(url,options)=>{calls.push({url:String(url),options});assert.equal(options.headers.get('Authorization'),'Bearer test-token');assert.equal(options.credentials,'same-origin');assert.equal(options.redirect,'error');return handler(String(url),options);};
 const {LegalApiClient,registerEvidence}=await import('../js/api/api-client.js');
 const {DraftingApi}=await import('../js/api/drafting-api.js');
 const {ResearchApi}=await import('../js/api/research-api.js');
