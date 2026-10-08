@@ -48,6 +48,21 @@ To resume training directly:
 
 An adapter, optimizer, RNG states and exact stream position are checkpointed every 100 optimizer steps. The two newest completed checkpoints are retained. An interruption can lose progress since the last completed checkpoint; resuming replays that unsaved work. An optional `--max-steps N` runs a segment, saves a checkpoint, and **does not mark the full epoch complete**.
 
+## Train alongside preparation
+
+Live mode consumes only closed shards with published SHA-256 checksums. It waits for
+new shards and completes only after preparation finishes and all training rows have
+been consumed. Validation/test rows are excluded from optimization. Do not also run
+the waiting pipeline coordinator: it would start a duplicate GPU trainer later.
+
+```powershell
+.\.venv-training\Scripts\python.exe -m training.train_full_domain --corpus datasets/india-law/full-domain-corpus --out training/output/full-domain-concurrent-20261009 --follow-preparation --checkpoint-every 10
+```
+
+Resume with the same command plus `--resume`. Keep the preparation input list and
+published shards unchanged. This trains the local Qwen 4B LoRA adapter; hosted Groq
+and Gemini weights remain unchanged.
+
 ## Validation performed
 
 The actual GPU smoke test saved a checkpoint after one step, restarted the process, restored adapter/optimizer/stream position, and finished the remaining fixture data at step two. This verifies the resume path, not full-dataset completion. The full preparation code processed all 74,731 rows in the central-legislation/1950 smoke inputs, wrote four shards, and verified their SHA-256 checksums. Those smoke artifacts are separate from the full job.

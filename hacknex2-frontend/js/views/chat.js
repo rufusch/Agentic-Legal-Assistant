@@ -2,6 +2,7 @@ import { LegalApiClient, escapeHtml } from '../api/api-client.js';
 import { ChatApi } from '../api/chat-api.js';
 import { Icons } from '../components/icons.js';
 import { CitationDrawer } from '../components/citation-drawer.js';
+import { officialSourceLinks } from '../components/official-source-links.js';
 
 const esc = (s) => {
   if (!s) return '';
@@ -54,11 +55,12 @@ export class ChatView {
   async render() {
     if (!this.loaded) {
       const docs=(await LegalApiClient.listDocuments()).data.filter(d=>d.status==='ready');
-      this.docs=docs.slice(0,30).map(d=>({id:d.id,name:d.name}));this.selectedDocs=this.docs.map(d=>d.id);this.loaded=true;
+      this.docs=docs.slice(0,30).map(d=>({id:d.id,name:d.name}));this.selectedDocs=this.docs.map(d=>d.id);
       this.model=(await ChatApi.config()).data.model;
       const saved=sessionStorage.getItem('caselens.chat.conversation:'+sessionStorage.getItem('caselens.tenant'));
       if(saved){try{const response=await ChatApi.getMessages(saved);this.convoId=saved;const last=response.data.filter(m=>m.role==='user').at(-1);if(last){this.selectedDocs=last.source_document_ids;this.docs=docs.filter(d=>this.selectedDocs.includes(d.id)).map(d=>({id:d.id,name:d.name}));}}catch(e){if(e.status!==404)throw e;}}
     }
+    this.loaded = true;
     if (!this.convoId) {
       try {
         const cRes = await ChatApi.createConversation({ title: 'New Chat', document_ids: this.selectedDocs });
@@ -66,8 +68,7 @@ export class ChatView {
         sessionStorage.setItem('caselens.chat.conversation:'+sessionStorage.getItem('caselens.tenant'),this.convoId);
         this.state = 'chat';
       } catch (e) {
-        window.showToast?.('Failed to create conversation', 'error');
-        return;
+        throw e;
       }
     }
     await this._renderChat();
@@ -132,6 +133,7 @@ export class ChatView {
       <span>Source support checked; human review required.</span>
       ${(m.citations||[]).map(c=>`<button class="btn btn-ghost btn-sm chat-citation" data-citation-id="${c.id}">[${esc(c.label)}] ${esc(c.document_name)}</button>`).join('')}
       ${(m.warnings||[]).map(w=>`<div>${esc(w.message)}</div>`).join('')}
+      ${officialSourceLinks(m.citations)}
     </div>`;
   }
 
@@ -187,7 +189,7 @@ export class ChatView {
 
   async _renderChat() {
     this.sub?.close();this.sub=null;
-    this.conversations=(await ChatApi.list()).data.items;
+    this.conversations=await ChatApi.list().then(res=>res.data.items).catch(e=>{window.showToast?.(e.message,'error');return [];});
     this.el.innerHTML = `
       <input type="file" id="chat-file-input" multiple accept=".pdf,.docx,.doc,.txt,.png,.jpg" / class="supplied-6e22c58a7a">
 
@@ -229,7 +231,7 @@ export class ChatView {
               <div id="attached-tags-container" class="supplied-b35783accd"></div>
 
               <div class="supplied-bfb533c7a8">
-                <input type="text" id="chat-input" class="input supplied-4da4b1bf8c" placeholder="Ask CaseLens AI about your attached documents..." />
+                <textarea id="chat-input" class="input supplied-4da4b1bf8c" rows="2" aria-label="Message" placeholder="Ask CaseLens AI about your attached documents..."></textarea>
               </div>
               
               <div class="supplied-2c6b7ba3c1">
@@ -274,6 +276,7 @@ export class ChatView {
     this.el.querySelectorAll('.chat-recent').forEach(b=>b.onclick=async()=>{
       this.sub?.close();this.sub=null;this.convoId=b.dataset.conversationId;
       sessionStorage.setItem('caselens.chat.conversation:'+sessionStorage.getItem('caselens.tenant'),this.convoId);
+      this.sub?.close();this.sub=null;this.activeJobId=null;
       const response=await ChatApi.getMessages(this.convoId);const last=response.data.filter(m=>m.role==='user').at(-1);
       if(last){this.selectedDocs=last.source_document_ids;this.docs=(await LegalApiClient.listDocuments()).data.filter(d=>d.status==='ready'&&this.selectedDocs.includes(d.id)).map(d=>({id:d.id,name:d.name}));}
       await this._renderChat();
@@ -295,12 +298,14 @@ export class ChatView {
 
     fileInput.addEventListener('change', async e => {
       const files=Array.from(e.target.files); if(!files.length)return;
-      const button=this.el.querySelector('#chat-send');button.disabled=true;
+      if(this.uploading||this.activeJobId)return;
+      this.uploading=true;if(this.uploading||this.activeJobId)return;
+      this.uploading=true;const button=this.el.querySelector('#chat-send');button.disabled=true;
       try {for(const f of files){const d=(await LegalApiClient.uploadDocument(f,{document_type:'case',jurisdiction:'IN',title:f.name})).data;this.docs.push({id:d.id,name:d.name});this.selectedDocs.push(d.id);}this._renderAttachedResources();window.app.updateDocBadgeCount();window.showToast?.('Documents parsed and attached.','success');}
-      catch(e){window.showToast?.(e.message,'error');}finally{button.disabled=false;fileInput.value='';}
+      catch(e){window.showToast?.(e.message,'error');}finally{this.uploading=false;button.disabled=Boolean(this.activeJobId);fileInput.value='';}
     });
     this.el.onclick=async e=>{
-      const copy=e.target.closest('.chat-copy');if(copy){const m=this.messages.find(m=>m.id===copy.dataset.messageId);await navigator.clipboard.writeText(m.content);window.showToast?.('Copied','success');}
+      const copy=e.target.closest('.chat-copy');if(copy){const m=this.messages.find(m=>m.id===copy.dataset.messageId);try{try{await navigator.clipboard.writeText(m.content);window.showToast?.('Copied','success');}catch(error){window.showToast?.(error.message || 'Clipboard unavailable','error');}}catch(error){window.showToast?.(error.message || 'Clipboard unavailable','error');}}
       const helpful=e.target.closest('.chat-helpful');if(helpful){try{await ChatApi.feedback(this.convoId,helpful.dataset.messageId,{accepted:true,use_for_training:false});window.showToast?.('Feedback saved. Training permission remains off.','success');}catch(error){window.showToast?.(error.message,'error');}}
     };
 
@@ -310,7 +315,7 @@ export class ChatView {
 
     const sendMsg = async () => {
       const text = input.value.trim();
-      if (!text) return;
+      if (!text || sendBtn.disabled || this.activeJobId || this.uploading) return;
       input.value = '';
       sendBtn.disabled = true;input.disabled=true;
 
@@ -349,13 +354,13 @@ export class ChatView {
     if(pending)this._followJob(pending.job_id,sendBtn,input);
     const prompt=sessionStorage.getItem('caselens.chat.prompt');if(prompt){input.value=prompt;sessionStorage.removeItem('caselens.chat.prompt');}
     sendBtn.addEventListener('click', sendMsg);
-    input.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter' && !sendBtn.disabled) sendMsg();
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !sendBtn.disabled) {e.preventDefault();sendMsg();}
     });
 
     this.el.querySelector('#new-chat-btn').addEventListener('click', async () => {
       if(this.sub){window.showToast?.('Wait for the current answer before starting a new chat.');return;}
-      this.convoId = null;
+      this.sub?.close();this.sub=null;this.activeJobId=null;this.convoId = null;
       this.messages = [];
       await this.render();
     });
@@ -446,7 +451,7 @@ export class ChatView {
       }
       this.historyEl.scrollTop = this.historyEl.scrollHeight;
     } catch (e) {
-      console.error("Failed to refresh messages", e);
+      window.showToast?.(e.message || 'Could not refresh messages. Reopen this chat to retry.', 'error');
     }
   }
 }

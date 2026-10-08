@@ -1,11 +1,12 @@
 /* ==========================================================================
    WORKFLOW 2 — LEGAL DRAFTING VIEW (Contract Section 4)
-   States: setup -> checking_requirements -> awaiting_information -> 
+   States: setup -> checking_requirements -> awaiting_information ->
            ready_to_draft -> drafting -> verifying -> completed
    ========================================================================== */
 
 import { LegalApiClient } from '../api/api-client.js';
 import { DraftingApi } from '../api/drafting-api.js';
+import { officialSourceLinks } from '../components/official-source-links.js';
 import { renderCitationBadge, renderWarningBox, renderPipelineTracker } from '../components/shared-ui.js';
 import { Icons } from '../components/icons.js';
 
@@ -32,7 +33,7 @@ export class DraftingView {
     this.form = this._loadDraft();
     this.fieldErrors = {};
     this.docs = [];
-    
+
     // Live draft state
     this.draftId = null;
     this.jobId = null;
@@ -49,7 +50,7 @@ export class DraftingView {
     if (this.state === 'awaiting_information' || this.state === 'ready_to_draft') return this._renderRequirements();
     if (this.state === 'drafting' || this.state === 'verifying') return this._renderRunning();
     if (this.state === 'completed') return this._renderEditor();
-    
+
     // Default fallback
     return this._renderRunning();
   }
@@ -70,7 +71,7 @@ export class DraftingView {
     } catch { /* ignore corrupt draft */ }
     return this._defaultForm();
   }
-  _saveDraft() { localStorage.setItem(DRAFTING_DRAFT_KEY+':'+sessionStorage.getItem('caselens.tenant'), JSON.stringify(this.form)); }
+  _saveDraft() { try { localStorage.setItem(DRAFTING_DRAFT_KEY+':'+sessionStorage.getItem('caselens.tenant'), JSON.stringify(this.form)); } catch { /* Keep the current form usable when browser storage is unavailable. */ } }
 
   _fieldError(name) {
     return this.fieldErrors[name] ? `<div class="rv-field-error" role="alert">${esc(this.fieldErrors[name])}</div>` : '';
@@ -83,7 +84,7 @@ export class DraftingView {
     const ready=new Set(this.docs.filter(d=>d.status==='ready').map(d=>d.id));
     this.form.supporting_document_ids=this.form.supporting_document_ids.filter(id=>ready.has(id));
     const readyDocs = this.docs.filter(d => d.status === 'ready');
-    
+
     this.el.innerHTML = `
       <div class="view-header">
         <div class="view-title-group">
@@ -96,7 +97,7 @@ export class DraftingView {
       <div class="df-setup-stack">
         <section class="card rv-card">
           <h3 class="supplied-726cf47beb">1. Document Details</h3>
-          
+
           <div class="rv-row2">
             <div>
               <label class="rv-label" for="df-type">Document Type</label>
@@ -145,7 +146,7 @@ export class DraftingView {
       </div>
     `;
     this._bindSetup();
-    const history=(await DraftingApi.list()).data.items;
+    const history=await DraftingApi.list().then(res=>res.data.items).catch(error=>{window.showToast?.(error.message || 'Could not load previous drafts','error');return [];});
     const card=document.createElement('section');card.className='card';card.style.marginTop='1.5rem';
     const title=document.createElement('h3');title.textContent='Previous drafts';card.append(title);
     for(const d of history){const b=document.createElement('button');b.className='btn btn-secondary';b.style.margin='0.5rem';b.textContent=d.title+' · '+d.status;b.onclick=async()=>{this.draftId=d.id;this.jobId=d.job_id;if(['awaiting_information','ready_to_draft'].includes(d.status))await this._loadRequirements();else if(['completed','completed_with_warnings'].includes(d.status))await this._loadDraftData();else{this.state=d.status;this._renderRunning();this.sub?.close();this.sub=LegalApiClient.subscribeJobEvents(d.job_id,async evt=>{if(this._jobFailed(evt))return;if(evt.event==='job.completed'){this.sub.close();const job=(await LegalApiClient.getJob(d.job_id)).data;if(job.phase==='requirements')await this._loadRequirements();else await this._loadDraftData();}});}};card.append(b);}this.el.append(card);
@@ -153,7 +154,7 @@ export class DraftingView {
 
   _bindSetup() {
     const $ = (s) => this.el.querySelector(s);
-    
+
     $('#df-type').addEventListener('input', (e) => { this.form.document_type = e.target.value; this._saveDraft(); });
     $('#df-jur').addEventListener('change', (e) => { this.form.jurisdiction = e.target.value; this._saveDraft(); });
     $('#df-court').addEventListener('input', (e) => { this.form.court = e.target.value; this._saveDraft(); });
@@ -169,13 +170,14 @@ export class DraftingView {
     });
 
     $('#df-submit').addEventListener('click', async () => {
+      if($('#df-submit').disabled)return;
       this.form={...this.form,document_type:$('#df-type').value,jurisdiction:$('#df-jur').value,court:$('#df-court').value,instructions:$('#df-inst').value,supporting_document_ids:[...this.el.querySelectorAll('.df-doc-check:checked')].map(i=>i.value)};
       this._saveDraft();
       this.fieldErrors = {};
       this.form.document_type = this.form.document_type.trim();
       if (this.form.document_type.length < 2) this.fieldErrors.document_type = 'Enter the legal document you want to draft.';
       if (!this.form.instructions.trim()) this.fieldErrors.instructions = "Instructions are required.";
-      
+
       if (Object.keys(this.fieldErrors).length) return this._renderSetup();
 
       const btn = $('#df-submit');
@@ -187,7 +189,7 @@ export class DraftingView {
         const res = await DraftingApi.createDraft(payload);
         this.draftId = res.data.draft_id;
         this.jobId = res.data.job_id;
-        
+
         // Setup SSE listener for the setup job
         this.sub = LegalApiClient.subscribeJobEvents(this.jobId, (evt) => {
           if(this._jobFailed(evt)) return;
@@ -200,7 +202,7 @@ export class DraftingView {
         this.state = 'checking_requirements';
         this._renderRunning();
       } catch (err) {
-        window.showToast?.('Error starting draft', 'error');
+        window.showToast?.(err.message || 'Error starting draft', 'error');
         this._renderSetup();
       }
     });
@@ -233,7 +235,7 @@ export class DraftingView {
 
   _renderRequirements() {
     const missingBlocking = this.requirements.filter(r => r.required && !r.current_answer).length;
-    
+
     this.el.innerHTML = `
       <div class="view-header">
         <div class="view-title-group">
@@ -242,7 +244,7 @@ export class DraftingView {
           <p class="view-subtitle">CaseLens requires the following information to prepare a complete draft. Missing non-blocking fields will be marked as placeholders.</p>
         </div>
       </div>
-      
+
       <div class="card supplied-6637fa9e21">
         ${this.requirements.map(req => `
           <div class="req-item supplied-ac6450b663">
@@ -274,7 +276,7 @@ export class DraftingView {
           const btn = this.el.querySelector('#df-generate');
           const missing = this.requirements.filter(r => r.required && !r.current_answer).length;
           btn.disabled = missing > 0;
-          this.el.querySelector('div[style*="font-weight: 500"]').innerHTML = missing > 0 
+          const status=this.el.querySelector('.df-missing');status.classList?.toggle('df-missing-warning',missing>0);status.classList?.toggle('df-missing-ready',missing===0);status.innerHTML = missing > 0
             ? `<span class="supplied-b83ba24323">${missing} required field(s) missing</span>`
             : `<span class="supplied-f83fcad98e">All required fields answered</span>`;
         }
@@ -282,16 +284,18 @@ export class DraftingView {
     });
 
     this.el.querySelector('#df-generate').addEventListener('click', async () => {
+      const button=this.el.querySelector('#df-generate');if(button.disabled)return;
       // Save requirements to backend
       const answers = this.requirements.filter(r => r.current_answer).map(r => ({ requirement_id: r.id, value: r.current_answer }));
       const missing=this.requirements.filter(r=>!String(r.current_answer??'').trim());
       if(missing.some(r=>r.required)) return window.showToast?.('Fill required fields.','error');
       if(missing.length&&!this.el.querySelector('#df-ack').checked) return window.showToast?.('Answer the optional gaps or explicitly acknowledge the placeholders.','error');
+      button.disabled=true;
       try {
         await DraftingApi.updateRequirements(this.draftId, { answers: this.requirements.map(r=>({requirement_id:r.id,value:String(r.current_answer??'')})) });
         const res = await DraftingApi.generateDraft(this.draftId, { proceed_with_missing_information: missing.length>0, acknowledged_requirement_ids:missing.map(r=>r.id) });
         this.jobId = res.data.job_id;
-        
+
         this.log = [{ t: new Date(), msg: 'Generation queued' }];
         this.state = 'drafting';
         this._renderRunning();
@@ -309,7 +313,7 @@ export class DraftingView {
           }
         });
       } catch (err) {
-        window.showToast?.('Failed to start generation', 'error');
+        button.disabled=false;window.showToast?.(err.message || 'Failed to start generation', 'error');
       }
     });
   }
@@ -386,8 +390,9 @@ export class DraftingView {
           <button class="btn btn-primary" id="df-new">${Icons.plus('', 15)}<span>New Draft</span></button>
         </div>
       </div>
-      
+
       ${d.warnings.map(w=>renderWarningBox(w)).join('')}
+      ${officialSourceLinks(d.citations)}
       ${hasUnverified ? `
         <div class="warning-box warning supplied-002dc26c47">
           <div class="warning-icon">${Icons.alertTriangle('', 18)}</div>
@@ -405,7 +410,7 @@ export class DraftingView {
                 ${sec.heading ? `<h3 class="supplied-0d1728b662">${esc(sec.heading)}</h3>` : ''}
                 ${sec.blocks.map(b => `
                   <div class="supplied-1bf397cb2e">
-                    <p class="df-block" ${b.editable ? 'contenteditable="true"' : ''} data-block-id="${b.id}" onfocus="this.style.border='1px dashed var(--border)'" onblur="this.style.border='1px dashed transparent'">
+                    <p class="df-block" ${b.editable ? 'contenteditable="true"' : ''} data-block-id="${b.id}">
                       ${formatText(b.text)}
                     </p><div>${(b.citation_ids||[]).map(id=>renderCitationBadge(d.citations.find(c=>c.id===id)?.label||'Source',id)).join('')}</div>
                     ${b.claim_ids.length > 0 ? `<div title="Verified Sources" class="supplied-621dc67228">${Icons.checkCircle('var(--success)', 14)}</div>` : ''}
@@ -422,7 +427,7 @@ export class DraftingView {
                   <div class="df-confidence ${hasUnverified?'df-confidence-pending':''}">${hasUnverified ? 'Pending' : Math.round(d.confidence.score * 100) + '%'}</div>
                   <div class="supplied-42a65cf583">Confidence</div>
                </div>
-               
+
                ${d.unresolved_placeholders.length > 0 ? `
                   <div class="warning-box warning supplied-9a7472a9ec">
                     <div class="warning-icon">${Icons.alertTriangle('', 18)}</div>
@@ -441,7 +446,7 @@ export class DraftingView {
 
   _bindEditor() {
     const $ = (s) => this.el.querySelector(s);
-    
+
     // Editor blocks
     this.el.querySelectorAll('.df-block[contenteditable="true"]').forEach(block => {
       block.addEventListener('blur', async (e) => {
@@ -454,7 +459,7 @@ export class DraftingView {
           await DraftingApi.patchSection(this.draftId, secId, { text,base_version:this.draftData.version });
           this._loadDraftData(); // Reload to reflect unverified state
         } catch(err) {
-          window.showToast?.('Failed to save edit', 'error');
+          window.showToast?.(err.message || 'Failed to save edit', 'error');
         }
       });
     });
@@ -474,7 +479,7 @@ export class DraftingView {
         this.log = [{ t: new Date(), msg: 'Verification queued' }];
         this.state = 'verifying';
         this._renderRunning();
-        
+
         this.sub?.close();
         this.sub = LegalApiClient.subscribeJobEvents(this.jobId, (evt) => {
           if(this._jobFailed(evt)) return;
@@ -506,7 +511,7 @@ export class DraftingView {
         try {
           await DraftingApi.exportDraft(this.draftId, format, this.draftData.version);
         } catch(err) {
-          window.showToast?.('Export failed', 'error');
+          window.showToast?.(err.message || 'Export failed', 'error');
         }
       }));
       document.addEventListener('click', (e) => {

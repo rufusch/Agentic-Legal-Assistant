@@ -10,9 +10,37 @@ import random
 import time
 
 
-def blocks(folder, tokenizer, length, cursor=None, split='train'):
+def prepared_shards(folder):
+    """Follow only closed, hashed shards published by the preparation manifest."""
+    index = 0
+    while True:
+        manifest = json.loads((folder / 'manifest.json').read_text())
+        name = f'part-{index:06}.jsonl'
+        expected = manifest.get('shard_sha256', {}).get(name)
+        if expected:
+            path = folder / name
+            digest = hashlib.sha256()
+            with path.open('rb') as stream:
+                for part in iter(lambda: stream.read(8 * 1024 * 1024), b''):
+                    digest.update(part)
+            if digest.hexdigest() != expected:
+                raise ValueError('Prepared shard checksum mismatch: ' + name)
+            yield path
+            index += 1
+        elif manifest.get('error_type'):
+            raise RuntimeError('Corpus preparation failed: ' + manifest['error_type'])
+        elif manifest.get('complete'):
+            if index != len(manifest['shards']):
+                raise ValueError('Completed corpus has missing shard checksums.')
+            return
+        else:
+            time.sleep(10)
+
+
+def blocks(folder, tokenizer, length, cursor=None, split='train', live=False):
     cursor = cursor or {'shard': 0, 'line': 0, 'block': 0}
-    for si, path in enumerate(sorted(folder.glob('part-*.jsonl'))):
+    paths = prepared_shards(folder) if live else sorted(folder.glob('part-*.jsonl'))
+    for si, path in enumerate(paths):
         if si < cursor['shard']: continue
         with path.open(encoding='utf-8') as stream:
             for li, line in enumerate(stream):
@@ -36,27 +64,30 @@ def main():
     p.add_argument('--sequence-length', type=int, default=256)
     p.add_argument('--gradient-accumulation', type=int, default=4)
     p.add_argument('--resume', action='store_true')
+    p.add_argument('--follow-preparation', action='store_true',
+                   help='Train on closed checksum-verified shards while preparation continues.')
     p.add_argument('--max-steps', type=int, help='Optional segmented run limit; never marks the full epoch complete.')
     a = p.parse_args()
     if min(a.checkpoint_every,a.sequence_length,a.gradient_accumulation) <= 0: p.error('Positive settings required.')
     if a.max_steps is not None and a.max_steps<=0:p.error('max-steps must be positive.')
     manifest_path = a.corpus / 'manifest.json'
     manifest = json.loads(manifest_path.read_text())
-    if not manifest.get('complete'): raise SystemExit('Full corpus preparation is incomplete.')
-    if sorted(manifest['shards']) != [p.name for p in sorted(a.corpus.glob('part-*.jsonl'))]:
+    if not manifest.get('complete') and not a.follow_preparation: raise SystemExit('Full corpus preparation is incomplete.')
+    if not a.follow_preparation and sorted(manifest['shards']) != [p.name for p in sorted(a.corpus.glob('part-*.jsonl'))]:
         raise SystemExit('Corpus shard list differs from its manifest.')
-    for name,expected in manifest.get('shard_sha256',{}).items():
+    for name,expected in ({} if a.follow_preparation else manifest.get('shard_sha256',{})).items():
         if Path(name).name!=name:raise SystemExit('Invalid corpus shard path.')
         digest=hashlib.sha256()
         with (a.corpus/name).open('rb') as stream:
             for part in iter(lambda:stream.read(8*1024*1024),b''):digest.update(part)
         if digest.hexdigest()!=expected:raise SystemExit('Corpus shard checksum mismatch.')
-    identity = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    identity = hashlib.sha256(json.dumps({'inputs':manifest['inputs'],'mode':'follow-preparation'},sort_keys=True).encode()).hexdigest() if a.follow_preparation else hashlib.sha256(manifest_path.read_bytes()).hexdigest()
     a.out.mkdir(parents=True,exist_ok=a.resume)
     status = {'complete':False,'objective':'one full streaming domain-adaptation epoch',
               'corpus_manifest_sha256':identity,'model':a.model,'steps':0,'tokens':0,
               'sequence_length':a.sequence_length,'gradient_accumulation':a.gradient_accumulation,
               'production_activated':False,'trained_workflow_specialists':[],
+              'follow_preparation':a.follow_preparation,
               'cursor':{'shard':0,'line':0,'block':0}}
     def save_status():
         temp=a.out/'status.tmp';temp.write_text(json.dumps(status,indent=2));temp.replace(a.out/'status.json')
@@ -94,7 +125,7 @@ def main():
         def evaluate():
             model.eval();values=[]
             with torch.no_grad():
-                for block,_ in blocks(a.corpus,tokenizer,a.sequence_length,split='validation'):
+                for block,_ in blocks(a.corpus,tokenizer,a.sequence_length,split='validation',live=a.follow_preparation):
                     values.append(float(loss(block)))
                     if len(values)>=16:break
             model.train()
@@ -120,7 +151,7 @@ def main():
                 shutil.rmtree(old)
         model.train();optimizer.zero_grad(set_to_none=True);micro=0;total_loss=0
         started=time.monotonic()
-        stream=blocks(a.corpus,tokenizer,a.sequence_length,status['cursor'])
+        stream=blocks(a.corpus,tokenizer,a.sequence_length,status['cursor'],live=a.follow_preparation)
         exhausted=False
         while not exhausted:
             batch=[]

@@ -61,7 +61,10 @@ def install(app, store, worker, get, envelope, APIError, idempotent, *, review_e
             documents = [get(tenant, 'document', rid) for rid in report['source_document_ids']]
             chunks = [c for c in store.all(tenant, 'chunk') if c['document_id'] in report['source_document_ids']]
             official=app.state.official_sources
-            if official.enabled and engine=='llm' and report.get('options',{}).get('compare_with_governing_law'):
+            if official.enabled and engine=='llm':
+                excluded_ids={d['id'] for d in documents if d['metadata'].get('document_type') in {'statute','judgment','secondary'} and not official.verified(tenant,d)}
+                documents=[d for d in documents if d['id'] not in excluded_ids]
+                chunks=[c for c in chunks if c['document_id'] not in excluded_ids]
                 lookup=official.enrich(tenant,report['focus_question'],lambda:worker.cancelled(tenant,job_id))
                 from backend.retrieval import search
                 authorities=official.current_documents(tenant)

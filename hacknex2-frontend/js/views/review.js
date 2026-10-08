@@ -5,6 +5,7 @@
 
 import { LegalApiClient } from '../api/api-client.js';
 import { ReviewApi } from '../api/review-api.js';
+import { officialSourceLinks } from '../components/official-source-links.js';
 import { renderCitationBadge, renderConfidenceMeter, renderWarningBox, renderPipelineTracker } from '../components/shared-ui.js';
 import { Icons } from '../components/icons.js';
 
@@ -80,7 +81,7 @@ export class ReviewView {
     } catch { /* ignore corrupt draft */ }
     return this._defaultForm();
   }
-  _saveDraft() { localStorage.setItem(DRAFT_KEY+':'+sessionStorage.getItem('caselens.tenant'), JSON.stringify(this.form)); }
+  _saveDraft() { try { localStorage.setItem(DRAFT_KEY+':'+sessionStorage.getItem('caselens.tenant'), JSON.stringify(this.form)); } catch { /* Preserve in-memory input if storage is unavailable. */ } }
 
   _fieldError(name) {
     return this.fieldErrors[name] ? `<div class="rv-field-error" role="alert">${esc(this.fieldErrors[name])}</div>` : '';
@@ -111,7 +112,7 @@ export class ReviewView {
       <div class="supplied-1d2d657b31">
         <div class="card rv-card supplied-f2fb085ec0">
           <div class="rv-upload-box supplied-f5d1932eff" id="rv-upload-box">
-            <input type="file" id="rv-file-upload" multiple accept=".pdf,.doc,.docx" / class="supplied-6aa34d7432">
+            <input type="file" id="rv-file-upload" multiple accept=".pdf,.doc,.docx" class="supplied-6aa34d7432">
             <div class="supplied-92f3ebbf29">
               <div class="supplied-b2f554c67e">
                 ${Icons.upload('', 20)}
@@ -299,7 +300,9 @@ export class ReviewView {
     const uploadStatus = $('#rv-upload-status');
     
     if (uploadBox && fileInput) {
-      uploadBox.addEventListener('click', () => fileInput.click());
+      uploadBox.addEventListener('click', (e) => {
+        if (e.target !== fileInput) fileInput.click();
+      });
       
       const preventDefaults = (e) => { e.preventDefault(); e.stopPropagation(); };
       ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => uploadBox.addEventListener(evt, preventDefaults));
@@ -316,18 +319,29 @@ export class ReviewView {
 
       const handleUpload = async (files) => {
         if (!files || !files.length) return;
-        uploadBox.style.pointerEvents = 'none';
-        uploadStatus.innerHTML = '<span class="btn-spinner supplied-f97278e810"></span>Uploading...';
+        const selectedFiles = Array.from(files);
+        fileInput.value = '';
+        const status = document.createElement('div');
+        status.setAttribute('role', 'status');
+        uploadStatus.append(status);
         try {
-          for (const file of files) {
-            await LegalApiClient.uploadDocument(file, {title:file.name, document_type:'case', jurisdiction:this.form?.options?.jurisdiction || 'IN'});
+          for (const file of selectedFiles) {
+            status.textContent = `Uploading ${file.name}… You can continue editing your review.`;
+            const result = await LegalApiClient.uploadDocument(file, {title:file.name, document_type:'case', jurisdiction:this.form?.options?.jurisdiction || 'IN'}, () => {
+              status.textContent = `${file.name} uploaded. Reading and indexing the document… You can continue editing.`;
+            });
+            this.docs = [...this.docs.filter(d => d.id !== result.data.id), result.data];
+            this.form.document_ids = [...new Set([...this.form.document_ids, result.data.id])];
+            this._saveDraft();
+            refreshList();
           }
+          status.textContent = 'Documents ready and selected for review.';
           window.showToast?.('Document(s) uploaded successfully', 'success');
-          this._renderSetup(); 
         } catch (err) {
-          window.showToast?.('Upload failed', 'error');
-          uploadBox.style.pointerEvents = 'auto';
-          uploadStatus.innerHTML = '<span class="supplied-103e792a7f">Upload failed</span>';
+          const message = err.message || 'Upload failed. Please try again.';
+          window.showToast?.(message, 'error');
+          status.textContent = message;
+          status.setAttribute('role', 'alert');
         }
       };
     }
@@ -363,14 +377,14 @@ export class ReviewView {
 
     $('#rv-reset').addEventListener('click', () => {
       this.form = this._defaultForm(); this.fieldErrors = {}; this.formError = null;
-      localStorage.removeItem(DRAFT_KEY);
+      try{localStorage.removeItem(DRAFT_KEY+':'+sessionStorage.getItem('caselens.tenant'));}catch{}
       this._renderSetup();
     });
     $('#rv-submit').addEventListener('click', () => this._submit());
   }
 
   async _submit() {
-    if (this._auditPending()) return;
+    if (this._auditPending() || this.el.querySelector('#rv-submit')?.disabled) return;
     const fe = {};
     if (!this.form.document_ids.length) fe.document_ids = 'Select at least one ready document.';
     if (this.form.focus_question.length > MAX_FOCUS) fe.focus_question = 'Must be 2,000 characters or fewer.';
@@ -390,7 +404,7 @@ export class ReviewView {
     };
     try {
       const res = await ReviewApi.createReview(payload, this.idemKey);
-      localStorage.removeItem(DRAFT_KEY);
+      try{localStorage.removeItem(DRAFT_KEY+':'+sessionStorage.getItem('caselens.tenant'));}catch{}
       this.idemKey = null;
       this.reviewId = res.data.review_id;
       this.versions = [];
@@ -531,7 +545,7 @@ export class ReviewView {
   }
 
   _cites(ids = []) {
-    return ids.map(id => renderCitationBadge(this.citMap[id]?.label || '?', id)).join('');
+    return ids.map(id => renderCitationBadge(this.citMap[id]?.label || '?', id)).join('') + officialSourceLinks(ids.map(id=>this.citMap[id]).filter(Boolean));
   }
 
   _sevPill(sev) {

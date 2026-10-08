@@ -1,5 +1,6 @@
 import { LegalApiClient, request } from '../api/api-client.js';
 import { ResearchApi } from '../api/research-api.js';
+import { officialSourceLinks } from '../components/official-source-links.js';
 import { renderCitationBadge } from '../components/shared-ui.js';
 import { Icons } from '../components/icons.js';
 
@@ -85,7 +86,7 @@ export class ResearchView {
         const result=await request('official-sources/import',{method:'POST',body:{url:this.el.querySelector('#official-url').value.trim(),title:this.el.querySelector('#official-title').value.trim(),document_type:this.el.querySelector('#official-kind').value}});
         status.textContent='Official source imported. It is available for research, drafting and chat.';
         const doc=await LegalApiClient.getDocument(result.data.document_id);
-        this.docs.push(doc.data);
+        this.docs.push(doc.data);this.form.document_ids.push(doc.data.id);
         const label=document.createElement('label'),checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=result.data.document_id;checkbox.className='doc-cb';checkbox.checked=true;
         label.append(checkbox,document.createTextNode(doc.data.name));this.el.querySelector('#res-docs-list').append(label);
       }catch(e){status.textContent=e.message;}finally{button.disabled=false;}
@@ -93,6 +94,7 @@ export class ResearchView {
     try {
       const res = await LegalApiClient.listDocuments({ status: 'ready' });
       this.docs = res.data;
+      this.form.document_ids=this.form.document_ids.filter(id=>this.docs.some(d=>d.id===id));
       const listEl = this.el.querySelector('#res-docs-list');
       if (this.docs.length === 0) {
         listEl.innerHTML = '<div class="rv-empty">No documents found.</div>';
@@ -110,10 +112,6 @@ export class ResearchView {
 
     this.el.querySelector('#res-question').value=this.form.question;
     this.el.querySelector('#res-jurisdiction').value=this.form.jurisdiction;
-
-    const history=(await ResearchApi.list()).data.items;
-    const historyCard=document.createElement('section');historyCard.className='card';historyCard.style.marginTop='1rem';const heading=document.createElement('h3');heading.textContent='Previous research';historyCard.append(heading);
-    for(const memo of history){const b=document.createElement('button');b.className='btn btn-secondary';b.style.margin='0.5rem';b.textContent=memo.question+' · '+memo.status;b.onclick=async()=>{this.researchId=memo.id;this.jobId=memo.job_id;if(['completed','completed_with_warnings'].includes(memo.status)){this.researchData=(await ResearchApi.getResearch(memo.id)).data;this.state='completed';this.render();}else if(['failed','cancelled'].includes(memo.status)){window.showToast?.(memo.failure?.message||memo.status,'error');}else{this.state='running';this.render();this._subscribeToJob();}};historyCard.append(b);}this.el.append(historyCard);
 
     // Upload functionality
     const uploadBox = this.el.querySelector('#res-upload-box');
@@ -135,7 +133,7 @@ export class ResearchView {
 
     };
 
-    uploadBox.addEventListener('click', () => fileInput.click());
+    uploadBox.addEventListener('click', e => { if(e.target!==fileInput) fileInput.click(); });
     fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
     uploadBox.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -155,6 +153,8 @@ export class ResearchView {
     });
 
     this.el.querySelector('#res-submit').addEventListener('click', async () => {
+      const button=this.el.querySelector('#res-submit');
+      if(button.disabled)return;
       const q = this.el.querySelector('#res-question').value.trim();
       if (!q) {
         window.showToast?.('Research question is required.', 'error');
@@ -164,6 +164,7 @@ export class ResearchView {
       this.form.jurisdiction = this.el.querySelector('#res-jurisdiction').value.trim();
       this.form.document_ids = Array.from(this.el.querySelectorAll('.doc-cb:checked')).map(cb => cb.value);
 
+      button.disabled=true;
       try {
         const createRes = await ResearchApi.createResearch(this.form);
         this.researchId = createRes.data.research_id;
@@ -173,8 +174,17 @@ export class ResearchView {
         this._subscribeToJob();
       } catch (e) {
         window.showToast?.(e.message || 'Failed to start research.', 'error');
+        button.disabled=false;
       }
     });
+    this.el.querySelector('#res-question').oninput=e=>{this.form.question=e.target.value;};
+    this.el.querySelector('#res-jurisdiction').oninput=e=>{this.form.jurisdiction=e.target.value;};
+    this.el.querySelector('#res-docs-list').onchange=()=>{this.form.document_ids=[...this.el.querySelectorAll('.doc-cb:checked')].map(cb=>cb.value);};
+    this.el.querySelectorAll('.doc-cb').forEach(cb=>{cb.checked=this.form.document_ids.includes(cb.value);});
+    const history=await ResearchApi.list().then(res=>res.data.items).catch(error=>{window.showToast?.(error.message || 'Could not load previous research','error');return [];});
+    const historyCard=document.createElement('section');historyCard.className='card';historyCard.style.marginTop='1rem';const heading=document.createElement('h3');heading.textContent='Previous research';historyCard.append(heading);
+    for(const memo of history){const b=document.createElement('button');b.className='btn btn-secondary';b.style.margin='0.5rem';b.textContent=memo.question+' · '+memo.status;b.onclick=async()=>{this.researchId=memo.id;this.jobId=memo.job_id;if(['completed','completed_with_warnings'].includes(memo.status)){this.researchData=(await ResearchApi.getResearch(memo.id)).data;this.state='completed';this.render();}else if(['failed','cancelled'].includes(memo.status)){window.showToast?.(memo.failure?.message||memo.status,'error');}else{this.state='running';this.render();this._subscribeToJob();}};historyCard.append(b);}this.el.append(historyCard);
+
   }
 
   _renderRunning() {
@@ -206,7 +216,7 @@ export class ResearchView {
       if(evt.event==='job.failed'||evt.data?.status==='cancelled'){sub.close();this.state='setup';window.showToast?.(evt.data.message||'Research cancelled','error');await this.render();return;}
       if (evt.event === 'job.progress') {
         this.progressLogs.push(evt.data);
-        if (this.state === 'running') this._renderRunning();
+        if (this.state === 'running') { const list=this.el.querySelector('#res-logs'); if(list){const li=document.createElement('li');li.textContent=evt.data.message || evt.data.status;list.append(li);} }
       } else if (evt.event === 'job.completed') {
         sub.close();
         try {
@@ -215,7 +225,8 @@ export class ResearchView {
           this.state = 'completed';
           this.render();
         } catch (e) {
-          window.showToast?.('Failed to fetch results.', 'error');
+          window.showToast?.(e.message || 'Failed to fetch results.', 'error');
+          this.state='setup';await this.render();
         }
       }
     });
@@ -225,6 +236,7 @@ export class ResearchView {
     const d=this.researchData;
     const cites=ids=>(ids||[]).map(id=>renderCitationBadge(d.citations.find(c=>c.id===id)?.label||'Source',id)).join('');
     this.el.innerHTML=`<div class="view-header"><div class="view-title-group"><div class="rv-eyebrow">Legal Research</div><h1>Research Memo</h1><p class="view-subtitle">${esc(d.question)}</p></div><div><button class="btn btn-secondary" id="res-export">Export PDF</button><button class="btn btn-primary" id="res-new">New Search</button></div></div>
+      ${officialSourceLinks(d.citations)}
       <div class="rv-setup-grid"><section class="card rv-card"><h3>Executive summary</h3><p>${esc(d.executive_summary.text)}</p>${cites(d.executive_summary.citation_ids)}
       ${d.legal_framework.map(s=>`<article class="supplied-80dfcf9181"><h3>${esc(s.heading)}</h3><p>${esc(s.analysis)}</p>${cites(s.citation_ids)}</article>`).join('')}
       ${d.application_to_facts.map(s=>`<article class="supplied-80dfcf9181"><h3>Application to facts</h3><p>${esc(s.analysis)}</p><p>Fact sources: ${cites(s.fact_citation_ids)}</p><p>Authority sources: ${cites(s.law_citation_ids)}</p></article>`).join('')}
