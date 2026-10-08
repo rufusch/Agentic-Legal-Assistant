@@ -56,9 +56,9 @@ export class DraftingView {
 
   _defaultForm() {
     return {
-      document_type: 'anticipatory_bail_application',
-      jurisdiction: 'IN-MH',
-      court: 'High Court of Bombay',
+      document_type: '',
+      jurisdiction: 'IN',
+      court: '',
       instructions: '',
       supporting_document_ids: []
     };
@@ -66,7 +66,7 @@ export class DraftingView {
   _loadDraft() {
     try {
       const d = JSON.parse(localStorage.getItem(DRAFTING_DRAFT_KEY+':'+sessionStorage.getItem('caselens.tenant')));
-      if (d && d.document_type) return d;
+      if (d && typeof d.document_type === 'string' && Array.isArray(d.supporting_document_ids)) return d;
     } catch { /* ignore corrupt draft */ }
     return this._defaultForm();
   }
@@ -89,20 +89,22 @@ export class DraftingView {
         <div class="view-title-group">
           <div class="rv-eyebrow">Workflow 2 &middot; Legal Drafting Engine</div>
           <h1>New Draft</h1>
-          <p class="view-subtitle">Select the document type and provide instructions. CaseLens will determine missing information and build a verifiable draft.</p>
+          <p class="view-subtitle">Draft any legal document. Describe the document you need and provide instructions. CaseLens will identify missing information and prepare your draft.</p>
         </div>
       </div>
 
-      <div class="rv-setup-grid">
+      <div class="df-setup-stack">
         <section class="card rv-card">
           <h3 class="supplied-726cf47beb">1. Document Details</h3>
           
           <div class="rv-row2">
             <div>
               <label class="rv-label" for="df-type">Document Type</label>
-              <select id="df-type" class="select">
-                ${DOC_TYPES.map(([v, l]) => `<option value="${v}" ${this.form.document_type === v ? 'selected' : ''}>${l}</option>`).join('')}
-              </select>
+              <input type="text" id="df-type" class="input" list="df-type-suggestions" maxlength="100" value="${esc(DOC_TYPES.find(([v]) => v === this.form.document_type)?.[1] || this.form.document_type)}" placeholder="e.g. Partnership deed, will, sale agreement" aria-describedby="df-type-help" />
+              <datalist id="df-type-suggestions">
+                ${DOC_TYPES.map(([, l]) => `<option value="${esc(l)}"></option>`).join('')}
+              </datalist>
+              <p class="rv-help" id="df-type-help">Enter any legal document type, or choose a suggestion.</p>
               ${this._fieldError('document_type')}
             </div>
             <div>
@@ -113,11 +115,11 @@ export class DraftingView {
             </div>
           </div>
 
-          <label class="rv-label supplied-9a7472a9ec" for="df-court">Court / Authority</label>
+          <label class="rv-label supplied-9a7472a9ec" for="df-court">Court / Authority (Optional)</label>
           <input type="text" id="df-court" class="input" value="${esc(this.form.court)}" placeholder="e.g. High Court of Bombay">
 
           <label class="rv-label supplied-9a7472a9ec" for="df-inst">Instructions & Context</label>
-          <textarea class="textarea" id="df-inst" rows="4" placeholder="Briefly explain what needs to be drafted...">${esc(this.form.instructions)}</textarea>
+          <textarea class="textarea" id="df-inst" rows="8" maxlength="8000" placeholder="Describe the purpose, parties, facts, key terms and any clauses or formatting you want included...">${esc(this.form.instructions)}</textarea>
           ${this._fieldError('instructions')}
         </section>
 
@@ -152,10 +154,10 @@ export class DraftingView {
   _bindSetup() {
     const $ = (s) => this.el.querySelector(s);
     
-    $('#df-type').addEventListener('change', (e) => { this.form.document_type = e.target.value; this._saveDraft(); });
+    $('#df-type').addEventListener('input', (e) => { this.form.document_type = e.target.value; this._saveDraft(); });
     $('#df-jur').addEventListener('change', (e) => { this.form.jurisdiction = e.target.value; this._saveDraft(); });
-    $('#df-court').addEventListener('change', (e) => { this.form.court = e.target.value; this._saveDraft(); });
-    $('#df-inst').addEventListener('change', (e) => { this.form.instructions = e.target.value; this._saveDraft(); });
+    $('#df-court').addEventListener('input', (e) => { this.form.court = e.target.value; this._saveDraft(); });
+    $('#df-inst').addEventListener('input', (e) => { this.form.instructions = e.target.value; this._saveDraft(); });
 
     $('#df-doc-list')?.addEventListener('change', (e) => {
       if (!e.target.classList.contains('df-doc-check')) return;
@@ -170,6 +172,8 @@ export class DraftingView {
       this.form={...this.form,document_type:$('#df-type').value,jurisdiction:$('#df-jur').value,court:$('#df-court').value,instructions:$('#df-inst').value,supporting_document_ids:[...this.el.querySelectorAll('.df-doc-check:checked')].map(i=>i.value)};
       this._saveDraft();
       this.fieldErrors = {};
+      this.form.document_type = this.form.document_type.trim();
+      if (this.form.document_type.length < 2) this.fieldErrors.document_type = 'Enter the legal document you want to draft.';
       if (!this.form.instructions.trim()) this.fieldErrors.instructions = "Instructions are required.";
       
       if (Object.keys(this.fieldErrors).length) return this._renderSetup();
@@ -179,7 +183,7 @@ export class DraftingView {
       btn.innerHTML = '<span class="btn-spinner"></span><span>Analyzing</span>';
 
       try {
-        const payload = { ...this.form };
+        const payload = { ...this.form, document_type: DOC_TYPES.find(([, label]) => label === this.form.document_type)?.[0] || this.form.document_type };
         const res = await DraftingApi.createDraft(payload);
         this.draftId = res.data.draft_id;
         this.jobId = res.data.job_id;

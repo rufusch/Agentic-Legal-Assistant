@@ -207,7 +207,7 @@ export class ReviewView {
       </div>
 
       <div class="rv-actions">
-        <span class="rv-help">Inputs are saved locally until the audit job is executed.</span>
+        <span class="rv-help">Inputs are saved as you type. You can keep editing while an audit runs.</span>
         <div class="supplied-859a0545c5">
           <button class="btn btn-ghost supplied-2556109043" id="rv-reset">Reset</button>
           <button class="btn btn-primary supplied-ad98e6cb4b" id="rv-submit"><span>Run Audit</span>${Icons.arrowRight('', 15)}</button>
@@ -215,6 +215,32 @@ export class ReviewView {
       </div>
     `;
     this._bindSetup();
+    this._updateAuditStatus();
+  }
+
+  _auditPending() {
+    return this.job && !['completed', 'completed_with_warnings', 'failed', 'cancelled'].includes(this.job.status);
+  }
+
+  _updateAuditStatus() {
+    if (this.state !== 'setup') return;
+    let status = this.el.querySelector('#rv-audit-status');
+    if (!status) {
+      status = document.createElement('div');
+      status.id = 'rv-audit-status';
+      status.className = 'rv-note';
+      status.setAttribute('aria-live', 'polite');
+      this.el.querySelector('.rv-actions')?.before(status);
+    }
+    const pending = this._auditPending();
+    const submit = this.el.querySelector('#rv-submit');
+    if (submit) submit.disabled = Boolean(pending);
+    if (!this.job) return;
+    status.innerHTML = `<span>${pending ? 'Audit running in the background. Edits are saved for your next audit.' : 'Audit ' + esc(this.job.status) + '. Your edited inputs are saved.'}</span> <button type="button" class="btn btn-secondary" id="rv-view-audit">${this.report && !pending ? 'View report' : 'View progress'}</button>`;
+    status.querySelector('#rv-view-audit').onclick = () => {
+      this.state = this.report && !pending ? 'report' : 'running';
+      this.render();
+    };
   }
 
   _inferNote() {
@@ -344,6 +370,7 @@ export class ReviewView {
   }
 
   async _submit() {
+    if (this._auditPending()) return;
     const fe = {};
     if (!this.form.document_ids.length) fe.document_ids = 'Select at least one ready document.';
     if (this.form.focus_question.length > MAX_FOCUS) fe.focus_question = 'Must be 2,000 characters or fewer.';
@@ -379,13 +406,14 @@ export class ReviewView {
   /* =========================== RUNNING =============================== */
   _startJob(jobId) {
     this.sub?.close();
-    this.state = 'running';
+    this.state = 'setup';
+    this.report = null;
     this.job = { id: jobId, status: 'queued', progress: 0.04, message: 'Review queued' };
     this.lastEventId = 0;
     this.log = [{ t: new Date(), msg: 'Review queued' }];
     this.liveWarnings = [];
     this.runError = null;
-    this._renderRunning();
+    this._renderSetup();
     this.sub = LegalApiClient.subscribeJobEvents(jobId, (evt) => this._onEvent(evt));
   }
 
@@ -409,11 +437,13 @@ export class ReviewView {
         break;
       case 'job.completed':
         this.sub?.close();
-        this.job = { ...this.job, status: d.final_status, progress: 1, message: 'Review complete' };
+        this.job = { ...this.job, status: d.status || d.final_status || 'completed', progress: 1, message: 'Review complete' };
         this.log.push({ t: new Date(), msg: 'Report verified and ready' });
         await this._loadReport();
-        this.state = 'report';
-        if (this._isVisible()) this._renderReport();
+        if (this.state === 'running') {
+          this.state = 'report';
+          if (this._isVisible()) this._renderReport();
+        } else if (this._isVisible()) this._updateAuditStatus();
         window.showToast?.('Review complete', 'success');
         return;
       case 'job.failed':
@@ -425,6 +455,7 @@ export class ReviewView {
         return;
     }
     if (this.state === 'running' && this._isVisible()) this._updateRunning();
+    if (this.state === 'setup' && this._isVisible()) this._updateAuditStatus();
   }
 
   _isVisible() { return this.el.classList.contains('active'); }
@@ -456,7 +487,7 @@ export class ReviewView {
            ${this.report ? '<button class="btn btn-secondary" id="rv-back-report">Back to report</button>' : ''}
            <button class="btn btn-primary" id="rv-back-setup">New review</button>
          </div>`
-      : `<button class="btn btn-danger" id="rv-cancel">Cancel review</button>`;
+      : `<button class="btn btn-secondary" id="rv-back-setup">Edit inputs</button><button class="btn btn-danger" id="rv-cancel">Cancel review</button>`;
 
     body.innerHTML = `
       ${st === 'cancelled' ? `<div class="warning-box warning"><div class="warning-icon">${Icons.alertTriangle('', 18)}</div><div><div class="warning-title">Review cancelled</div><div class="warning-message">No report was produced for this run. Earlier versions, if any, are unchanged.</div></div></div>` : ''}
