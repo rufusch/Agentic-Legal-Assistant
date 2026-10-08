@@ -20,7 +20,7 @@ def rows(path):
             if not line.strip():continue
             item=json.loads(line);file=(path.parent/item['path']).resolve();meta=item['metadata']
             if not file.is_file() or not 0<file.stat().st_size<=25*1024*1024:raise ValueError(f'Row {line_number}: source missing or exceeds 25 MB')
-            if meta.get('document_type') not in {'statute','judgment','case','contract','secondary','past_draft'}:raise ValueError(f'Row {line_number}: invalid document_type')
+            if meta.get('document_type') not in {'statute','judgment','case','contract','secondary','past_draft','user_input'}:raise ValueError(f'Row {line_number}: invalid document_type')
             if not all(meta.get(k) for k in ('corpus_id','corpus_version','jurisdiction')):raise ValueError(f'Row {line_number}: corpus_id, corpus_version and jurisdiction required')
             if len(json.dumps(meta).encode())>16000:raise ValueError(f'Row {line_number}: metadata too large')
             digest=hashlib.sha256()

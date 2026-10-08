@@ -1,0 +1,5 @@
+Query Text,Model Answer,Supporting Passage,Source File,Split
+How long had the applicant been in custody?,The applicant had remained in custody for 71 days.,The applicant was arrested on 2 January 2025 and has remained in custody for 71 days.,synthetic_bail_order.txt,train
+What amount does the prosecution allege the applicant received?,"The prosecution alleges the applicant received Rs. 2,50,000 from the complainant.","The prosecution alleges that the applicant received Rs.   2,50,000 from the complainant.",synthetic_bail_order.txt,train
+When is an accused entitled to default bail?,An accused is entitled to be released on bail where the charge sheet is not filed within sixty days of arrest.,"Where the charge sheet is not filed within sixty days of arrest, the accused shall be entitled to be released on bail.",synthetic_procedure_act.txt,
+What is the personal bond amount fixed?,The personal bond is Rs. 50000.,This sentence does not exist in the order.,synthetic_bail_order.txt,test

@@ -1,0 +1,9 @@
+# URL list for: python -m scripts.fetch_public_corpus corpus/recommended-sources.txt --out corpus/bail-authorities
+# Format: URL key=value;key=value   (see corpus/recommended-sources.md; only URLs seen on official-site indexes are listed)
+# Add judgment PDFs from sci.gov.in once located, e.g.:
+# https://api.sci.gov.in/supremecourt/<year>/<diary>/<file>.pdf document_type=judgment;court=Supreme Court of India;decided_at=YYYY-MM-DD;neutral_citation=YYYY INSC NNN;title=<Party> v. <Party>
+https://indiacode.nic.in/bitstream/123456789/20099/3/A2023-46.pdf document_type=statute;title=Bharatiya Nagarik Suraksha Sanhita, 2023;effective_from=2024-07-01
+https://www.indiacode.nic.in/bitstream/123456789/20062/1/a202345.pdf document_type=statute;title=Bharatiya Nyaya Sanhita, 2023;effective_from=2024-07-01
+https://www.indiacode.nic.in/bitstream/123456789/20063/1/aa202347.pdf document_type=statute;title=Bharatiya Sakshya Adhiniyam, 2023;effective_from=2024-07-01
+# verify before enabling (confirm it is the amended English CrPC text):
+# https://www.indiacode.nic.in/bitstream/123456789/13624/1/the_code_of_criminal_procedure%2c_1973.pdf document_type=statute;title=Code of Criminal Procedure, 1973;effective_to=2024-06-30
