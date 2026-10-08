@@ -37,7 +37,7 @@ def install(app, store, worker, get, envelope, APIError, idempotent, *, review_e
     app.state.models = models
     engine=review_engine or os.getenv('LEXIMIND_REVIEW_ENGINE','llm')
     if engine not in {'llm','extractive'}: raise ValueError('Invalid review engine')
-    llm=review_llm or LocalReviewLLM.from_env()
+    llm=review_llm or LocalReviewLLM.for_role('review')
     app.state.review_llm, app.state.review_engine = llm, engine
 
     def model_metadata(): return llm.metadata if engine=='llm' else models.get('review').metadata

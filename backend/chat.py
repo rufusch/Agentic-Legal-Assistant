@@ -81,10 +81,8 @@ def training_dataset(store, tenant):
 
 
 def install(app, store, worker, get, envelope, APIError, idempotent, chat_llm=None):
-    base = LocalReviewLLM.from_env()
     def env(key, fallback): return os.getenv('LEXIMIND_CHAT_'+key, fallback)
-    llm = chat_llm or replace(base, provider=env('LLM_PROVIDER', base.provider),
-        base_url=env('BASE_URL', base.base_url), model=env('LLM_MODEL', base.model), api_key=env('API_KEY', base.api_key))
+    llm = chat_llm or LocalReviewLLM.for_role('chat')
     app.state.chat_llm = llm
     def metadata(): return {**llm.metadata, 'id':'leximind-chat', 'workflow':'chat',
         'output_schema':'grounded-chat-v1', 'prompt_version':'grounded-chat-v1'}

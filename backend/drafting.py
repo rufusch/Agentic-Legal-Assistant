@@ -29,8 +29,7 @@ def now(): return datetime.now(timezone.utc).isoformat()
 def install(app, store, worker, get, envelope, APIError, idempotent, drafting_llm=None):
     # A separate instance/configuration is deliberate: training/replacing drafting never changes review.
     def env(name, fallback): return os.getenv('LEXIMIND_DRAFTING_'+name, fallback)
-    base = LocalReviewLLM.from_env()
-    llm = drafting_llm or replace(base, provider=env('LLM_PROVIDER',base.provider), base_url=env('BASE_URL',base.base_url), model=env('LLM_MODEL',base.model), api_key=env('API_KEY',base.api_key))
+    llm = drafting_llm or LocalReviewLLM.for_role('drafting')
     app.state.drafting_llm = llm
     def metadata(): return {**llm.metadata,'id':'leximind-drafting','workflow':'drafting','output_schema':'legal-draft-v1','prompt_version':'grounded-drafting-v1'}
 

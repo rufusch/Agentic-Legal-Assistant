@@ -28,9 +28,8 @@ def training_dataset(store,tenant):
     return rows
 
 def install(app,store,worker,get,envelope,APIError,idempotent,research_llm=None):
-    base=LocalReviewLLM.from_env()
     def env(key,fallback):return os.getenv('LEXIMIND_RESEARCH_'+key,fallback)
-    llm=research_llm or replace(base,provider=env('LLM_PROVIDER',base.provider),base_url=env('BASE_URL',base.base_url),model=env('LLM_MODEL',base.model),api_key=env('API_KEY',base.api_key))
+    llm = research_llm or LocalReviewLLM.for_role('research')
     app.state.research_llm=llm
     def metadata():return {**llm.metadata,'id':'leximind-research','workflow':'research','output_schema':'research-memo-v1','prompt_version':'grounded-research-v1'}
 

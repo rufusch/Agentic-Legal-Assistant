@@ -29,3 +29,5 @@ tmp/
 *.blob
 node_modules/
 integration/*.zip
+evaluation/runs/
+training/output/
