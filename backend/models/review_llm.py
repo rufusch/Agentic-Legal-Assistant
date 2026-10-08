@@ -49,8 +49,13 @@ ROLES = ('review', 'drafting', 'research', 'chat', 'verifier', 'baseline', 'judg
 
 
 def _env(role, key):
-    """Role-specific value, then the shared LEXIMIND_LLM_* default, then legacy REVIEW_* keys."""
-    for name in (f'LEXIMIND_{role.upper()}_{key}', f'LEXIMIND_LLM_{key}', f'LEXIMIND_REVIEW_{key}'):
+    """Role-specific value, then the shared LEXIMIND_LLM_* default, then legacy REVIEW_* keys.
+
+    The shared form drops a leading LLM_ so the defaults read LEXIMIND_LLM_MODEL,
+    LEXIMIND_LLM_PROVIDER and LEXIMIND_LLM_API_KEY rather than doubling the prefix.
+    """
+    shared = key[4:] if key.startswith('LLM_') else key
+    for name in (f'LEXIMIND_{role.upper()}_{key}', f'LEXIMIND_LLM_{shared}', f'LEXIMIND_REVIEW_{key}'):
         value = os.getenv(name)
         if value not in (None, ''):
             return value
@@ -150,7 +155,7 @@ class LocalReviewLLM:
         try:
             if self.provider in PRESETS and not self.api_key:
                 return {'ready':False,'reason':'MODEL_KEY_MISSING','message':f'Set an API key for the {self.provider} {self.role} model.','model':self.metadata}
-            with httpx.Client(timeout=8,trust_env=False,headers=self.headers) as client:
+            with httpx.Client(timeout=8,trust_env=False,transport=self.transport,headers=self.headers) as client:
                 data=client.get(self._url('models')).raise_for_status().json()
             names=[m.get('name') or m.get('id') for m in data.get('models',data.get('data',[]))]
             ready=self.model in names or any(str(n).endswith('/'+self.model) for n in names) or (self.provider in PRESETS and bool(names))
