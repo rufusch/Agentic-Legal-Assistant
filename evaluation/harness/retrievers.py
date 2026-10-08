@@ -11,14 +11,21 @@ from collections import Counter
 from backend import retrieval
 
 
+def _mode(name):
+    """Pin a retrieval mode explicitly so ablation names never drift with the env default."""
+    def run(chunks, query, limit=10):
+        return retrieval.search(chunks, query, limit, mode=name)
+    return run
+
+
 def hybrid(chunks, query, limit=10):
-    return retrieval.search(chunks, query, limit)
+    return retrieval.search(chunks, query, limit, mode='hybrid')
 
 
 def _rerank_production(field):
     """Rank by one component score of the production retriever (all candidates, then sort)."""
     def run(chunks, query, limit=10):
-        rows = retrieval.search(chunks, query, len(chunks))
+        rows = retrieval.search(chunks, query, len(chunks), mode='hybrid')
         if not rows or field not in rows[0]:
             raise RuntimeError(f'backend.retrieval.search no longer exposes {field}')
         return sorted((r for r in rows if r[field] > 1e-6), key=lambda r: (-r[field], r['id']))[:limit]
@@ -47,6 +54,9 @@ RETRIEVERS = {
     'dense': _rerank_production('dense_score'),   # production LSA component only
     'bm25_plain': bm25_plain,                  # textbook BM25 reference
 }
+# Every mode the production retriever exposes (bm25, lsa, hybrid, hybrid+rewrite, full)
+# becomes an ablation arm under its own name.
+RETRIEVERS.update({name: _mode(name) for name in getattr(retrieval, 'MODES', ()) if name not in RETRIEVERS})
 
 
 def get(name):
