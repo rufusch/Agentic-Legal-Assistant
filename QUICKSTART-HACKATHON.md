@@ -23,7 +23,7 @@ for the numbers measured so far and which of them is safe to quote.
 .\run-eval.ps1 -GroqKey "gsk_..."              # full run
 ```
 
-Arms: `baseline` (Llama-3.3-70B plain RAG), `system` (ours), `system_no_verify`,
+Arms: `baseline` (gpt-oss-120b on Groq, plain RAG), `system` (ours), `system_no_verify`,
 `system_no_numeric`. The last two are the ablation that answers "what is new
 compared with the baseline" — 25% of the score.
 
@@ -60,7 +60,7 @@ train when held-out ids appear in the training data.
 
 ```powershell
 $env:LEXIMIND_VERIFIER_LLM_PROVIDER="groq"      # independent verifier
-$env:LEXIMIND_VERIFIER_LLM_MODEL="llama-3.3-70b-versatile"
+$env:LEXIMIND_VERIFIER_LLM_MODEL="openai/gpt-oss-120b"
 $env:LEXIMIND_VERIFIER_API_KEY="gsk_..."
 $env:LEXIMIND_RETRIEVAL_MODE="full"             # or "hybrid" if MRR matters more
 $env:LEXIMIND_EMBEDDINGS="ollama"               # after: ollama pull nomic-embed-text
