@@ -35,8 +35,19 @@ class Proposition(Strict):
     text: str = Field(min_length=1,max_length=2000)
     source_ids: list[str] = Field(min_length=1,max_length=8)
 
+class Side(Strict):
+    text: str = Field(min_length=1,max_length=1200)
+    source_ids: list[str] = Field(min_length=1,max_length=6)
+
+class Conflict(Strict):
+    topic: str = Field(min_length=1,max_length=300)
+    side_a: Side
+    side_b: Side
+    explanation: str = Field(min_length=1,max_length=800)
+
 class ProposedResearch(Strict):
     propositions: list[Proposition] = Field(default_factory=list,max_length=24)
+    conflicts: list[Conflict] = Field(default_factory=list,max_length=6)
     limitations: list[str] = Field(default_factory=list,max_length=12)
 
 class Decision(Strict):
@@ -106,6 +117,7 @@ class ResearchMemo(Strict):
     key_authorities: list[Authority]
     application_to_facts: list[Application]
     conflicting_authorities: list[dict]
+    agent_trace: list[dict] = Field(default_factory=list)
     claims: list[VerifiedClaim]
     citations: list[Citation]
     warnings: list[Warning]

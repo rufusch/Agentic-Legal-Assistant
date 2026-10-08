@@ -108,6 +108,10 @@ class InterpretationCheck(Strict):
 class VerificationRecord(Strict):
     method: str = ''
     same_model: bool = True
+    independent_verifier: bool = False
+    generator_model: str | None = None
+    verifier_model: str | None = None
+    verifier_provider: str | None = None
     items: list[InterpretationCheck] = Field(default_factory=list)
 
 

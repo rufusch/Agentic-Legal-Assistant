@@ -1,7 +1,6 @@
 """Legal Research API with tenant-scoped retrieval and durable jobs."""
 import json
-import os
-from dataclasses import replace
+from backend import agent_loop as agent
 from datetime import datetime, timezone
 from io import BytesIO
 from typing import Literal
@@ -27,12 +26,11 @@ def training_dataset(store,tenant):
             rows.append({k:v for k,v in candidate.items() if k not in {'id','created_at'}})
     return rows
 
-def install(app,store,worker,get,envelope,APIError,idempotent,research_llm=None):
-    base=LocalReviewLLM.from_env()
-    def env(key,fallback):return os.getenv('LEXIMIND_RESEARCH_'+key,fallback)
-    llm=research_llm or replace(base,provider=env('LLM_PROVIDER',base.provider),base_url=env('BASE_URL',base.base_url),model=env('LLM_MODEL',base.model),api_key=env('API_KEY',base.api_key))
-    app.state.research_llm=llm
-    def metadata():return {**llm.metadata,'id':'leximind-research','workflow':'research','output_schema':'research-memo-v1','prompt_version':'grounded-research-v1'}
+def install(app,store,worker,get,envelope,APIError,idempotent,research_llm=None,verify_llm=None):
+    llm = research_llm or LocalReviewLLM.for_role('research')
+    checker = agent.verifier(llm, verify_llm)
+    app.state.research_llm=llm;app.state.research_verify_llm=checker
+    def metadata():return {**llm.metadata,'id':'leximind-research','workflow':'research','output_schema':'research-memo-v1','prompt_version':'grounded-research-v2-agentic','verifier':agent.verification_info(llm,checker)}
 
     def retrieve(tenant,memo):
         docs={d['id']:d for d in store.all(tenant,'document') if d['status']=='ready'}
@@ -52,11 +50,11 @@ def install(app,store,worker,get,envelope,APIError,idempotent,research_llm=None)
                     if filters['date_from'] and date<Date.fromisoformat(filters['date_from']) or filters['date_to'] and date>Date.fromisoformat(filters['date_to']):excluded+=1;continue
                 except (ValueError,TypeError):excluded+=1;continue
             authorities.add(rid)
-        all_chunks=store.all(tenant,'chunk');chosen=[];used=0;logs=[]
+        all_chunks=store.all(tenant,'chunk');chosen=[];used=0;logs=[];allowed=set()
         for label,ids in [('Governing statutes',{i for i in authorities if docs[i]['metadata'].get('document_type')=='statute'}),('Precedents',{i for i in authorities if docs[i]['metadata'].get('document_type')=='judgment'}),('Secondary commentary',{i for i in authorities if docs[i]['metadata'].get('document_type')=='secondary'}),('Case context',selected-authorities)]:
             # Context cannot bypass authority filters through a selected-file checkbox.
             ids={i for i in ids if i in authorities or docs[i]['metadata'].get('document_type') not in {'statute','judgment','secondary','past_draft'}}
-            pool=[c for c in all_chunks if c['document_id'] in ids]
+            pool=[c for c in all_chunks if c['document_id'] in ids];allowed|=ids
             hits=search(pool,memo['question'],12 if options['depth']=='deep' else 6)
             included=[]
             for c in hits:
@@ -65,7 +63,8 @@ def install(app,store,worker,get,envelope,APIError,idempotent,research_llm=None)
         memo['source_document_ids']=sorted(selected|{c['document_id'] for c in chosen})
         memo['search_log']=logs;memo['sub_queries']=[{k:entry[k] for k in ('id','question','status')} for entry in logs]
         memo['retrieval']={'context_characters':used,'excluded_by_filters':excluded,'method':'bm25-lsa-rrf-v1','maximum_context_characters':24000}
-        return [docs[i] for i in {c['document_id'] for c in chosen}],chosen
+        # The agentic retry may search only this same filter-respecting pool.
+        return [docs[i] for i in {c['document_id'] for c in chosen}],chosen,[c for c in all_chunks if c['document_id'] in allowed],[docs[i] for i in allowed]
 
     def execute(tenant,rid,jid):
         memo=get(tenant,'research',rid);job=get(tenant,'job',jid)
@@ -76,8 +75,9 @@ def install(app,store,worker,get,envelope,APIError,idempotent,research_llm=None)
                     memo['status']=stage;job.update(status=stage,progress=value)
                     store.save(tenant,'research',memo);store.save(tenant,'job',job);store.event(jid,'job.progress',status=stage,progress=value,message=message)
             progress('retrieving',.1,'Searching workspace authorities and selected case context')
-            documents,chunks=retrieve(tenant,memo)
-            memo=synthesize(memo,documents,chunks,llm,lambda:worker.cancelled(tenant,jid),progress)
+            documents,chunks,pool,allowed=retrieve(tenant,memo)
+            memo=synthesize(memo,documents,chunks,llm,lambda:worker.cancelled(tenant,jid),progress,verify_llm=checker,pool=pool,all_documents=allowed)
+            documents=[d for d in allowed if d['id'] in set(memo['source_document_ids'])]
             with store.transaction():
                 if worker.cancelled(tenant,jid):return
                 candidate=memo.pop('training_candidate',None)
