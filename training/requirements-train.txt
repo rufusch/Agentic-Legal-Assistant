@@ -1,0 +1,20 @@
+# Training-only dependencies. Install into a SEPARATE venv from the app (torch is large).
+# Verified together on 2026-10-08 (CPU smoke test of train_lora.py with a tiny Qwen3 model):
+#   torch 2.14.1, transformers 5.19.0, trl 1.14.2, peft 0.21.2, accelerate 1.15.0, datasets 5.1.0
+# NVIDIA GPU on Windows/Linux: install torch first from https://pytorch.org (CUDA wheel), e.g.
+#   pip install torch --index-url https://download.pytorch.org/whl/cu128
+# then: pip install -r training/requirements-train.txt
+torch>=2.6
+transformers>=4.56,<6
+trl>=0.24,<2
+peft>=0.17,<1
+accelerate>=1.10,<2
+datasets>=3.6,<6
+# QLoRA (4-bit). Linux/Windows + NVIDIA only; omit on CPU/Mac and run train_lora.py with --no-4bit.
+bitsandbytes>=0.46; platform_system != "Darwin"
+# Optional, Linux/Colab/Kaggle: 2x faster, less VRAM; train_lora.py uses it automatically when importable.
+#   pip install unsloth
+# GGUF export (export_to_ollama.py installs llama.cpp's own converter requirements):
+sentencepiece
+protobuf
+safetensors
