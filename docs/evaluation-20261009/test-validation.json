@@ -1,0 +1,8 @@
+{
+  "command": ".venv/Scripts/python.exe -m pytest -q",
+  "passed": 156,
+  "warnings": 2,
+  "exit_code": 0,
+  "duration_seconds": 34.94,
+  "python": "3.12.14"
+}

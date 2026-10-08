@@ -73,11 +73,16 @@ def batches(items, limit, size):
     if current:yield current
 
 
-def analyze(report, documents, chunks, llm, cancelled=lambda:False, progress=lambda *a:None):
+def analyze(report, documents, chunks, llm, cancelled=lambda:False, progress=lambda *a:None, verify_llm=None):
     if cancelled(): raise ReviewCancelled()
+    from backend import agent_loop as agent
+    checker=verify_llm or llm; info=agent.verification_info(llm,checker); independent=info['independent_verifier']
     if not chunks: raise ReviewModelError('NO_REVIEW_EVIDENCE','No readable source text is available.',False)
     model_status=llm.status()
     if not model_status['ready']:raise ReviewModelError(model_status['reason'],model_status['message'])
+    if checker is not llm:
+        vstatus=checker.status()
+        if not vstatus['ready']:raise ReviewModelError(vstatus['reason'],'Verifier model: '+vstatus['message'])
     total=sum(len(c['text']) for c in chunks)
     if total>MAX_SOURCE_CHARACTERS:
         raise ReviewModelError('REVIEW_CONTEXT_LIMIT','Review is limited to 120,000 extracted characters per run. Split the matter into smaller document groups; nothing was silently truncated.',False)
@@ -134,7 +139,7 @@ def analyze(report, documents, chunks, llm, cancelled=lambda:False, progress=lam
     groups=list(batches(inputs,24_000,lambda i:len(json.dumps(i,ensure_ascii=False))))
     for index,group in enumerate(groups):
         progress('verifying',.72+.2*index/len(groups),f'Checking finding group {index+1} of {len(groups)}')
-        raw=llm.complete([{'role':'system','content':VERIFY_SYSTEM},{'role':'user','content':json.dumps({'items':group},ensure_ascii=False)}],verification_schema(Verification,group),cancelled)
+        raw=checker.complete([{'role':'system','content':VERIFY_SYSTEM},{'role':'user','content':json.dumps({'items':group},ensure_ascii=False)}],verification_schema(Verification,group),cancelled)
         try: response=Verification.model_validate(raw)
         except ValidationError: raise ReviewModelError('MODEL_INVALID_VERIFICATION','Local model verification did not match the required schema.') from None
         expected={item['id'] for item in group}
@@ -143,7 +148,7 @@ def analyze(report, documents, chunks, llm, cancelled=lambda:False, progress=lam
             raise ReviewModelError('MODEL_INVALID_VERIFICATION','Verification omitted or duplicated finding IDs. No unchecked report was published.')
         decisions.update({d.id:d for d in response.decisions})
 
-    result={**report,'model':{**llm.metadata,'requested_version':report['model']['version']},'key_facts':[],'contradictions':[],'missing_information':[],'relevant_evidence':[],'claims':[],'citations':[],'warnings':[],'timeline':[],'overview':None,'document_kind':analyses[-1].document_kind,'verification':{'method':'exact_source_spans_and_second_llm_pass','same_model':True,'items':[]},'coverage':{'total_source_chunks':len(chunks),'analyzed_source_chunks':len(chunks),'source_characters':total,'packets':len(packets),'cross_packet_synthesis':not cross_packet_limited,'parser_versions':sorted({d.get('parser_version','unknown') for d in documents}),'source_hashes':{d['id']:d['sha256'] for d in documents},'prompt_sha256':hashlib.sha256((SYSTEM+VERIFY_SYSTEM).encode()).hexdigest()}}
+    result={**report,'model':{**llm.metadata,'requested_version':report['model']['version']},'key_facts':[],'contradictions':[],'missing_information':[],'relevant_evidence':[],'claims':[],'citations':[],'warnings':[],'timeline':[],'overview':None,'document_kind':analyses[-1].document_kind,'verification':{**info,'method':'exact_source_spans_and_second_llm_pass','items':[]},'coverage':{'total_source_chunks':len(chunks),'analyzed_source_chunks':len(chunks),'source_characters':total,'packets':len(packets),'cross_packet_synthesis':not cross_packet_limited,'parser_versions':sorted({d.get('parser_version','unknown') for d in documents}),'source_hashes':{d['id']:d['sha256'] for d in documents},'prompt_sha256':hashlib.sha256((SYSTEM+VERIFY_SYSTEM).encode()).hexdigest()}}
     citations={};risks=[];accepted=0
     def cite(refs):
         ids=[]
@@ -160,8 +165,10 @@ def analyze(report, documents, chunks, llm, cancelled=lambda:False, progress=lam
         accepted+=1
         item=candidate['data'];rid=candidate['id'];kind=candidate['kind'];refs=cite(candidate['refs'])
         result['verification']['items'].append({'item_id':rid,'supported':True,'reason':decision.reason})
+        refcat={str(i):r for i,r in enumerate(candidate['refs'])}
+        score,why=agent.claim_confidence(list(refcat),refcat,documents_by_id,independent=independent)
         if kind=='fact':
-            result['claims'].append({'id':rid,'text':item['text'],'citation_ids':refs,'verification_status':'partially_supported','confidence':.6,'warning':'Model interpretation checked against quoted evidence; not independently certified legal truth.'})
+            result['claims'].append({'id':rid,'text':item['text'],'citation_ids':refs,'verification_status':agent.claim_status(independent,bool(refs)),'confidence':score,'warning':('Independent-model' if independent else 'Same-model')+' check of model interpretation against quoted evidence; confidence: '+why+'. Not certified legal truth.'})
             result['key_facts'].append({'id':uid(),'label':item['label'],'value':item['text'],'assertion_type':item['assertion_type'],'claim_id':rid,'citation_ids':refs})
         elif kind=='overview':result['overview']={'id':rid,'text':item['text'],'citation_ids':refs}
         elif kind=='event':result['timeline'].append({'id':rid,'date':item['date'],'event':item['text'],'citation_ids':refs})
@@ -171,7 +178,7 @@ def analyze(report, documents, chunks, llm, cancelled=lambda:False, progress=lam
         elif kind=='conflict':
             from backend.llm_review_schema import CitedText
             sides=[{'statement':s['text'],'citation_ids':cite(references(CitedText.model_validate(s).references))} for s in item['sides']]
-            result['contradictions'].append({'id':rid,'topic':item['topic'],'description':item['explanation'],'sides':sides,'severity':item['severity'],'legal_effect':None,'resolution':'Reconcile the cited accounts and obtain clarification before relying on either position.','confidence':confidence(.6,'Potential inconsistency identified by the model; applicability needs human review.')})
+            result['contradictions'].append({'id':rid,'topic':item['topic'],'description':item['explanation'],'sides':sides,'severity':item['severity'],'legal_effect':None,'resolution':'Reconcile the cited accounts and obtain clarification before relying on either position.','confidence':confidence(score,'Potential inconsistency identified by the model; applicability needs human review. '+why)})
     if not accepted: raise ReviewModelError('NO_SUPPORTED_FINDINGS','No model findings passed source and interpretation checks. No report was published.')
     result['citations']=list(citations.values())
     result['model']['artifact_digest']=model_status['model'].get('artifact_digest')
@@ -179,11 +186,11 @@ def analyze(report, documents, chunks, llm, cancelled=lambda:False, progress=lam
     if dropped:result['warnings'].append(warning('unsupported_claim','Unsupported findings removed',f'{dropped} proposed findings were removed because their quotes or interpretations could not be checked.'))
     if cross_packet_limited:result['warnings'].append(warning('partial_processing','Cross-packet comparison limited','Every source packet was read, but the combined notes exceeded the synthesis limit. Cross-packet contradictions may be missed; review smaller document groups.'))
     if report['options']['compare_with_governing_law']:result['warnings'].append(warning('weak_authority','Authority currency not verified','Only supplied authority excerpts are considered. This local model does not establish current law, treatment, jurisdictional applicability or enforceability.'))
-    result['warnings'].append(warning('partial_processing','Model-assisted analysis requires review','Source quotes and offsets were checked in code. Interpretations were checked by a second pass of the same local model, which can repeat errors. Findings are not a certified legal opinion and coverage may be incomplete.','info'))
+    result['warnings'].append(warning('partial_processing','Model-assisted analysis requires review','Source quotes and offsets were checked in code. Interpretations were checked by '+('an independent verifier model' if independent else 'a second pass of the same model, which can repeat errors')+'. Findings are not a certified legal opinion and coverage may be incomplete.','info'))
     levels=['undetermined','low','medium','high','critical']
     priority=max([r['severity'] for r in risks]+[c['severity'] for c in result['contradictions']],key=levels.index,default='undetermined')
     result['risk_summary']={'overall':priority,'rationale':'Priority reflects model-identified concerns in supplied evidence, not an enforceability determination or predicted outcome.','items':risks}
-    result['confidence']=confidence(.6,'Source anchoring was checked mechanically; analytical support was checked by the same local LLM and still requires human assessment.')
+    result['confidence']=agent.overall(result['claims'],independent) if result['claims'] else confidence(.5 if independent else .4,'Findings were verified but none are key-fact claims; human assessment required.')
     result['status']='completed_with_warnings'
     result['failure']=None
     return result

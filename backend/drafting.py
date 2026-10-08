@@ -13,7 +13,7 @@ from fastapi import Request
 from fastapi.responses import Response
 
 from backend.drafting_schema import CreateDraft, Answers, GenerateDraft, EditSection, DraftFeedback
-from backend.drafting_requirements import requirements, missing, refresh_status
+from backend.drafting_requirements import requirements, missing, refresh_status, prefill
 from backend.drafting_engine import generate
 from backend.jobs import TERMINAL
 from backend.models.review_llm import LocalReviewLLM, ReviewModelError, ReviewCancelled
@@ -26,13 +26,14 @@ def uid(): return str(uuid4())
 def now(): return datetime.now(timezone.utc).isoformat()
 
 
-def install(app, store, worker, get, envelope, APIError, idempotent, drafting_llm=None):
+def install(app, store, worker, get, envelope, APIError, idempotent, drafting_llm=None, verify_llm=None):
     # A separate instance/configuration is deliberate: training/replacing drafting never changes review.
     def env(name, fallback): return os.getenv('LEXIMIND_DRAFTING_'+name, fallback)
-    base = LocalReviewLLM.from_env()
-    llm = drafting_llm or replace(base, provider=env('LLM_PROVIDER',base.provider), base_url=env('BASE_URL',base.base_url), model=env('LLM_MODEL',base.model), api_key=env('API_KEY',base.api_key))
-    app.state.drafting_llm = llm
-    def metadata(): return {**llm.metadata,'id':'leximind-drafting','workflow':'drafting','output_schema':'legal-draft-v1','prompt_version':'grounded-drafting-v1'}
+    llm = drafting_llm or LocalReviewLLM.for_role('drafting')
+    from backend.agent_loop import verifier, verification_info
+    checker = verifier(llm, verify_llm)
+    app.state.drafting_llm = llm; app.state.drafting_verify_llm = checker
+    def metadata(): return {**llm.metadata,'id':'leximind-drafting','workflow':'drafting','output_schema':'legal-draft-v1','prompt_version':'grounded-drafting-v1','verifier':verification_info(llm,checker)}
 
     def snapshot(tenant, draft):
         store.save(tenant,'draft_version',{'id':uid(),'draft_id':draft['id'],'version':draft['version'],'source_document_ids':draft['source_document_ids'],'created_at':now(),'draft':draft})
@@ -111,14 +112,15 @@ def install(app, store, worker, get, envelope, APIError, idempotent, drafting_ll
                     store.event(jid,'job.progress',status=stage,progress=value,message=message)
             if job['phase']=='requirements':
                 progress('checking_requirements',.5,'Checking intake fields and recording unresolved information')
-                draft['requirements']=requirements(draft);refresh_status(draft)
+                sources=[get(tenant,'document',i) for i in draft['supporting_document_ids']]
+                draft['requirements']=requirements(draft);prefill(draft,sources,[c for c in store.all(tenant,'chunk') if c['document_id'] in set(draft['supporting_document_ids'])]);refresh_status(draft)
                 draft['warnings']=[warning('missing_information','Intake checklist scope','This is a drafting intake checklist, not a certified jurisdictional filing checklist. Supporting evidence is strongly recommended.','info')]
             else:
                 progress('retrieving',.15,'Retrieving relevant case evidence, tenant authorities and style examples')
                 with store.transaction():
                     documents,chunks,examples=retrieve(tenant,draft)
                     store.save(tenant,'draft',draft)
-                result,training=generate(draft,documents,chunks,examples,llm,lambda:worker.cancelled(tenant,jid),progress,verify_edits=job['phase']=='verify')
+                result,training=generate(draft,documents,chunks,examples,llm,lambda:worker.cancelled(tenant,jid),progress,verify_edits=job['phase']=='verify',verify_llm=checker)
                 result['model']={**result['model'],**metadata()};draft=result
                 # Only the sanitized published result can become an approved training target.
                 from backend.drafting_training import target_from_draft
@@ -175,7 +177,9 @@ def install(app, store, worker, get, envelope, APIError, idempotent, drafting_ll
             if len({str(a.requirement_id) for a in body.answers})!=len(body.answers):raise APIError(400,'VALIDATION_ERROR','Duplicate requirement answer.')
             for answer in body.answers:
                 if str(answer.requirement_id) not in by_id:raise APIError(400,'VALIDATION_ERROR','Unknown requirement id.')
-                item=by_id[str(answer.requirement_id)];item['current_answer']=answer.value.strip() or None
+                item=by_id[str(answer.requirement_id)]
+                if item.get('source')=='document' and (answer.value.strip() or None)!=item['current_answer']:item.update(source='user',citation=None)
+                item['current_answer']=answer.value.strip() or None
                 if item['key'] in {'court','instructions','jurisdiction'}:draft[item['key']]=item['current_answer']
                 else:draft['facts'][item['key']]=item['current_answer']
             if len(json.dumps(draft['facts'],ensure_ascii=False))>24000:raise APIError(413,'DRAFT_CONTEXT_LIMIT','Facts exceed 24,000 characters.')

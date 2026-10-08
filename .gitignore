@@ -9,7 +9,7 @@ __pycache__/
 .env
 tmp/test-run-*/
 
-datasets/
+/datasets/
 models/artifacts/
 
 .runtime/
@@ -29,3 +29,6 @@ tmp/
 *.blob
 node_modules/
 integration/*.zip
+evaluation/runs/
+training/output/
+.claude/

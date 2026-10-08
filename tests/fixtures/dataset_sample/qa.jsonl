@@ -1,0 +1,4 @@
+{"qid":"j1","question":"Was investigation complete when bail was granted?","answer":"The charge sheet was filed on 20 February 2025 and investigation is complete.","doc":"synthetic_bail_order.txt"}
+{"qid":"j2","question":"What does the Act say about bail in non-serious offences?","answer":"A person accused of a non-serious offence shall be released on bail unless the court records reasons for refusal.","doc":"synthetic_procedure_act.txt"}
+{"qid":"j3","question":"What is the applicant's bank account number?","answer":"","answerable":false,"doc":"synthetic_bail_order.txt"}
+{"qid":"j4","question":"Who is the complainant's employer?","answer":"The complainant works for Acme Bank.","doc":"synthetic_bail_order.txt"}

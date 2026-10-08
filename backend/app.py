@@ -64,7 +64,7 @@ class APIError(Exception):
         self.status, self.code, self.message, self.retryable = status, code, message, retryable
 
 
-def create_app(storage=None, tokens=None, encryption_key=None, *, start_worker=True, demo=None, rate_limit=240, review_engine=None, review_llm=None, drafting_llm=None, research_llm=None, chat_llm=None):
+def create_app(storage=None, tokens=None, encryption_key=None, *, start_worker=True, demo=None, rate_limit=240, review_engine=None, review_llm=None, drafting_llm=None, research_llm=None, chat_llm=None, verify_llm=None):
     s = Store(storage or os.getenv('BACKEND_STORAGE', '.data'), encryption_key or os.getenv('BACKEND_ENCRYPTION_KEY'))
     auth = tokens if tokens is not None else json.loads(os.getenv('BACKEND_TOKENS', '{}'))
     demo = os.getenv('BACKEND_DEMO') == '1' if demo is None else demo
@@ -480,14 +480,14 @@ def create_app(storage=None, tokens=None, encryption_key=None, *, start_worker=T
         return StreamingResponse(stream(), media_type='text/event-stream', headers={'X-Accel-Buffering': 'no'})
 
     from backend.reviews import install
-    install(app, s, worker, get, envelope, APIError, idempotent, review_engine=review_engine, review_llm=review_llm)
+    install(app, s, worker, get, envelope, APIError, idempotent, review_engine=review_engine, review_llm=review_llm, verify_llm=verify_llm)
     from backend.drafting import install as install_drafting
-    install_drafting(app, s, worker, get, envelope, APIError, idempotent, drafting_llm=drafting_llm)
+    install_drafting(app, s, worker, get, envelope, APIError, idempotent, drafting_llm=drafting_llm, verify_llm=verify_llm)
     from backend.research import install as install_research
-    install_research(app, s, worker, get, envelope, APIError, idempotent, research_llm=research_llm)
+    install_research(app, s, worker, get, envelope, APIError, idempotent, research_llm=research_llm, verify_llm=verify_llm)
 
     from backend.chat import install as install_chat
-    install_chat(app, s, worker, get, envelope, APIError, idempotent, chat_llm=chat_llm)
+    install_chat(app, s, worker, get, envelope, APIError, idempotent, chat_llm=chat_llm, verify_llm=verify_llm)
 
     from backend.grounding import install as install_grounding
     install_grounding(app,s,get,envelope,APIError)

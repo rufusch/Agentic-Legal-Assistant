@@ -1,0 +1,7 @@
+SYNTHETIC TEST FIXTURE - NOT A REAL STATUTE
+THE EXAMPLE CRIMINAL PROCEDURE ACT, 2030
+ACT NO. 99 OF 2030
+BE IT ENACTED by the Example Legislature as follows:
+1. Short title. This Act may be called the Example Criminal Procedure Act, 2030.
+2. Bail in non-serious offences. A person accused of a non-serious offence shall be released on bail unless the court records reasons for refusal.
+3. Default bail. Where the charge sheet is not filed within sixty days of arrest, the accused shall be entitled to be released on bail.

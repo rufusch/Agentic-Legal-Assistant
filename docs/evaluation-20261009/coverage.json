@@ -1,0 +1,101 @@
+{
+  "complete": true,
+  "queries": 13,
+  "expected_pairs": 52,
+  "completed_pairs": 52,
+  "identical_retrieved_context_across_arms": true,
+  "model_failures": [
+    {
+      "arm": "system",
+      "id": "unans-trial-sentence",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    },
+    {
+      "arm": "system",
+      "id": "unans-io-name",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    },
+    {
+      "arm": "system",
+      "id": "unans-stamp-duty",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    },
+    {
+      "arm": "system_no_numeric",
+      "id": "ica-remote-loss",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    },
+    {
+      "arm": "system_no_numeric",
+      "id": "ica-what-is-contract",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    },
+    {
+      "arm": "system_no_numeric",
+      "id": "ica-competence",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    },
+    {
+      "arm": "system_no_numeric",
+      "id": "ica-impossible-act",
+      "error": "ReviewModelError: The configured model is rate limited; retry shortly."
+    },
+    {
+      "arm": "system_no_numeric",
+      "id": "ica-free-consent",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    },
+    {
+      "arm": "system_no_numeric",
+      "id": "bail-fir-police-station",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    },
+    {
+      "arm": "system_no_numeric",
+      "id": "bail-time-limit",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    },
+    {
+      "arm": "system_no_numeric",
+      "id": "bail-chargesheet-bharat",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    },
+    {
+      "arm": "system_no_numeric",
+      "id": "bail-added-offences",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    },
+    {
+      "arm": "system_no_numeric",
+      "id": "unans-trial-sentence",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    },
+    {
+      "arm": "system_no_numeric",
+      "id": "unans-io-name",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    },
+    {
+      "arm": "system_no_numeric",
+      "id": "unans-stamp-duty",
+      "error": "ReviewModelError: Groq daily quota cannot fit this request. Use another configured model or increase the project quota."
+    }
+  ],
+  "unjudged_claims": [],
+  "pairs_by_arm": {
+    "baseline": 13,
+    "system": 13,
+    "system_no_verify": 13,
+    "system_no_numeric": 13
+  },
+  "rejection_reasons": {
+    "baseline": {},
+    "system": {
+      "numeric": 3
+    },
+    "system_no_verify": {
+      "numeric": 3
+    },
+    "system_no_numeric": {}
+  }
+}

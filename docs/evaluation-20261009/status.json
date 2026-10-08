@@ -1,0 +1,58 @@
+{
+  "dataset": "evaluation\\datasets\\public_dev.jsonl",
+  "dataset_sha256": "507ec904e7b146acb29de086b7b77330c93a6d2418c9e8da26378df865795335",
+  "split": "all",
+  "queries": 13,
+  "query_ids": [
+    "ica-remote-loss",
+    "ica-what-is-contract",
+    "ica-competence",
+    "ica-impossible-act",
+    "ica-free-consent",
+    "ica-penalty",
+    "bail-fir-police-station",
+    "bail-time-limit",
+    "bail-chargesheet-bharat",
+    "bail-added-offences",
+    "unans-trial-sentence",
+    "unans-io-name",
+    "unans-stamp-duty"
+  ],
+  "retrieval": "hybrid",
+  "context_characters": 6000,
+  "arms": [
+    "baseline",
+    "system",
+    "system_no_verify",
+    "system_no_numeric"
+  ],
+  "models": {
+    "chat": "qwen/qwen3.8-27b",
+    "verifier": "openai/gpt-oss-20b",
+    "judge": "gemini-3.1-flash-lite",
+    "baseline": "openai/gpt-oss-120b"
+  },
+  "judge_model": "gemini-3.1-flash-lite",
+  "warnings": [],
+  "provenance": [
+    {
+      "run": "evaluation\\runs\\paired-full-gemini31-20261009",
+      "arms": [
+        "baseline",
+        "system_no_verify"
+      ],
+      "source": "completed measured checkpoints from interrupted run"
+    },
+    {
+      "run": "evaluation\\runs\\verified-20b-20261009",
+      "arms": [
+        "system",
+        "system_no_numeric"
+      ],
+      "source": "complete 20B verifier rerun"
+    }
+  ],
+  "complete": true,
+  "completed_pairs": 52,
+  "expected_pairs": 52
+}

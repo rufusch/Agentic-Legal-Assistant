@@ -1,0 +1,305 @@
+{
+  "dataset": "evaluation\\datasets\\public_dev.jsonl",
+  "dataset_sha256": "507ec904e7b146acb29de086b7b77330c93a6d2418c9e8da26378df865795335",
+  "split": "all",
+  "queries": 13,
+  "query_ids": [
+    "ica-remote-loss",
+    "ica-what-is-contract",
+    "ica-competence",
+    "ica-impossible-act",
+    "ica-free-consent",
+    "ica-penalty",
+    "bail-fir-police-station",
+    "bail-time-limit",
+    "bail-chargesheet-bharat",
+    "bail-added-offences",
+    "unans-trial-sentence",
+    "unans-io-name",
+    "unans-stamp-duty"
+  ],
+  "retrieval": "hybrid",
+  "context_characters": 6000,
+  "arms": [
+    "baseline",
+    "system",
+    "system_no_verify",
+    "system_no_numeric"
+  ],
+  "models": {
+    "chat": "qwen/qwen3.8-27b",
+    "verifier": "openai/gpt-oss-20b",
+    "judge": "gemini-3.1-flash-lite",
+    "baseline": "openai/gpt-oss-120b"
+  },
+  "judge_model": "gemini-3.1-flash-lite",
+  "warnings": [],
+  "provenance": [
+    {
+      "run": "evaluation\\runs\\paired-full-gemini31-20261009",
+      "arms": [
+        "baseline",
+        "system_no_verify"
+      ],
+      "source": "completed measured checkpoints from interrupted run"
+    },
+    {
+      "run": "evaluation\\runs\\verified-20b-20261009",
+      "arms": [
+        "system",
+        "system_no_numeric"
+      ],
+      "source": "complete 20B verifier rerun"
+    }
+  ],
+  "metrics": {
+    "baseline": {
+      "all": {
+        "queries": 13,
+        "failures": 0,
+        "claims": 15,
+        "unjudged_claims": 0,
+        "groundedness": 1.0,
+        "strict_groundedness": 1.0,
+        "fabricated_claims": 0,
+        "fabrication_rate": 0.0,
+        "label_counts": {
+          "supported": 15,
+          "partially_supported": 0,
+          "unsupported": 0,
+          "fabricated": 0
+        },
+        "answer_coverage": 1.0,
+        "correct_abstention": 1.0,
+        "context_recall": 0.9,
+        "mean_latency_s": 9.0194
+      },
+      "dev": {
+        "queries": 9,
+        "failures": 0,
+        "claims": 8,
+        "unjudged_claims": 0,
+        "groundedness": 1.0,
+        "strict_groundedness": 1.0,
+        "fabricated_claims": 0,
+        "fabrication_rate": 0.0,
+        "label_counts": {
+          "supported": 8,
+          "partially_supported": 0,
+          "unsupported": 0,
+          "fabricated": 0
+        },
+        "answer_coverage": 1.0,
+        "correct_abstention": 1.0,
+        "context_recall": 0.8571,
+        "mean_latency_s": 10.2641
+      },
+      "heldout": {
+        "queries": 4,
+        "failures": 0,
+        "claims": 7,
+        "unjudged_claims": 0,
+        "groundedness": 1.0,
+        "strict_groundedness": 1.0,
+        "fabricated_claims": 0,
+        "fabrication_rate": 0.0,
+        "label_counts": {
+          "supported": 7,
+          "partially_supported": 0,
+          "unsupported": 0,
+          "fabricated": 0
+        },
+        "answer_coverage": 1.0,
+        "correct_abstention": 1.0,
+        "context_recall": 1.0,
+        "mean_latency_s": 6.2188
+      }
+    },
+    "system": {
+      "all": {
+        "queries": 13,
+        "failures": 3,
+        "claims": 27,
+        "unjudged_claims": 0,
+        "groundedness": 0.9444,
+        "strict_groundedness": 0.8889,
+        "fabricated_claims": 0,
+        "fabrication_rate": 0.0,
+        "label_counts": {
+          "supported": 24,
+          "partially_supported": 3,
+          "unsupported": 0,
+          "fabricated": 0
+        },
+        "answer_coverage": 0.8,
+        "correct_abstention": 0.0,
+        "context_recall": 0.9,
+        "mean_latency_s": 27.2015
+      },
+      "dev": {
+        "queries": 9,
+        "failures": 2,
+        "claims": 16,
+        "unjudged_claims": 0,
+        "groundedness": 1.0,
+        "strict_groundedness": 1.0,
+        "fabricated_claims": 0,
+        "fabrication_rate": 0.0,
+        "label_counts": {
+          "supported": 16,
+          "partially_supported": 0,
+          "unsupported": 0,
+          "fabricated": 0
+        },
+        "answer_coverage": 0.7143,
+        "correct_abstention": 0.0,
+        "context_recall": 0.8571,
+        "mean_latency_s": 26.4889
+      },
+      "heldout": {
+        "queries": 4,
+        "failures": 1,
+        "claims": 11,
+        "unjudged_claims": 0,
+        "groundedness": 0.8636,
+        "strict_groundedness": 0.7273,
+        "fabricated_claims": 0,
+        "fabrication_rate": 0.0,
+        "label_counts": {
+          "supported": 8,
+          "partially_supported": 3,
+          "unsupported": 0,
+          "fabricated": 0
+        },
+        "answer_coverage": 1.0,
+        "correct_abstention": 0.0,
+        "context_recall": 1.0,
+        "mean_latency_s": 28.8643
+      }
+    },
+    "system_no_verify": {
+      "all": {
+        "queries": 13,
+        "failures": 0,
+        "claims": 27,
+        "unjudged_claims": 0,
+        "groundedness": 0.9444,
+        "strict_groundedness": 0.8889,
+        "fabricated_claims": 0,
+        "fabrication_rate": 0.0,
+        "label_counts": {
+          "supported": 24,
+          "partially_supported": 3,
+          "unsupported": 0,
+          "fabricated": 0
+        },
+        "answer_coverage": 0.8,
+        "correct_abstention": 1.0,
+        "context_recall": 0.9,
+        "mean_latency_s": 31.7655
+      },
+      "dev": {
+        "queries": 9,
+        "failures": 0,
+        "claims": 16,
+        "unjudged_claims": 0,
+        "groundedness": 1.0,
+        "strict_groundedness": 1.0,
+        "fabricated_claims": 0,
+        "fabrication_rate": 0.0,
+        "label_counts": {
+          "supported": 16,
+          "partially_supported": 0,
+          "unsupported": 0,
+          "fabricated": 0
+        },
+        "answer_coverage": 0.7143,
+        "correct_abstention": 1.0,
+        "context_recall": 0.8571,
+        "mean_latency_s": 31.7291
+      },
+      "heldout": {
+        "queries": 4,
+        "failures": 0,
+        "claims": 11,
+        "unjudged_claims": 0,
+        "groundedness": 0.8636,
+        "strict_groundedness": 0.7273,
+        "fabricated_claims": 0,
+        "fabrication_rate": 0.0,
+        "label_counts": {
+          "supported": 8,
+          "partially_supported": 3,
+          "unsupported": 0,
+          "fabricated": 0
+        },
+        "answer_coverage": 1.0,
+        "correct_abstention": 1.0,
+        "context_recall": 1.0,
+        "mean_latency_s": 31.8472
+      }
+    },
+    "system_no_numeric": {
+      "all": {
+        "queries": 13,
+        "failures": 12,
+        "claims": 1,
+        "unjudged_claims": 0,
+        "groundedness": 1.0,
+        "strict_groundedness": 1.0,
+        "fabricated_claims": 0,
+        "fabrication_rate": 0.0,
+        "label_counts": {
+          "supported": 1,
+          "partially_supported": 0,
+          "unsupported": 0,
+          "fabricated": 0
+        },
+        "answer_coverage": 0.1,
+        "correct_abstention": 0.0,
+        "context_recall": 0.9,
+        "mean_latency_s": 1.969
+      },
+      "dev": {
+        "queries": 9,
+        "failures": 9,
+        "claims": 0,
+        "unjudged_claims": 0,
+        "groundedness": null,
+        "strict_groundedness": null,
+        "fabricated_claims": 0,
+        "fabrication_rate": null,
+        "label_counts": {
+          "supported": 0,
+          "partially_supported": 0,
+          "unsupported": 0,
+          "fabricated": 0
+        },
+        "answer_coverage": 0.0,
+        "correct_abstention": 0.0,
+        "context_recall": 0.8571,
+        "mean_latency_s": null
+      },
+      "heldout": {
+        "queries": 4,
+        "failures": 3,
+        "claims": 1,
+        "unjudged_claims": 0,
+        "groundedness": 1.0,
+        "strict_groundedness": 1.0,
+        "fabricated_claims": 0,
+        "fabrication_rate": 0.0,
+        "label_counts": {
+          "supported": 1,
+          "partially_supported": 0,
+          "unsupported": 0,
+          "fabricated": 0
+        },
+        "answer_coverage": 0.3333,
+        "correct_abstention": 0.0,
+        "context_recall": 1.0,
+        "mean_latency_s": 1.969
+      }
+    }
+  }
+}
