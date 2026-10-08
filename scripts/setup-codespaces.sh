@@ -15,12 +15,19 @@ if command -v apt-get >/dev/null 2>&1; then
     dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -q 'install ok installed' || missing=1
   done
   if [[ "$missing" == 1 ]]; then
+    # The base image may contain unrelated third-party repositories (e.g. Yarn)
+    # with expired keys. These packages all come from Debian; keep its signature
+    # checks and avoid refreshing repositories this application does not use.
+    apt_options=()
+    if [[ -f /etc/apt/sources.list.d/debian.sources ]]; then
+      apt_options=(-o Dir::Etc::sourcelist=sources.list.d/debian.sources -o Dir::Etc::sourceparts=-)
+    fi
     if [[ "$EUID" == 0 ]]; then
-      apt-get update
-      apt-get install -y --no-install-recommends libglib2.0-0 libgl1 fonts-dejavu-core antiword
+      apt-get "${apt_options[@]}" update
+      apt-get "${apt_options[@]}" install -y --no-install-recommends libglib2.0-0 libgl1 fonts-dejavu-core antiword
     else
-      sudo -n apt-get update
-      sudo -n apt-get install -y --no-install-recommends libglib2.0-0 libgl1 fonts-dejavu-core antiword
+      sudo -n apt-get "${apt_options[@]}" update
+      sudo -n apt-get "${apt_options[@]}" install -y --no-install-recommends libglib2.0-0 libgl1 fonts-dejavu-core antiword
     fi
   fi
 fi
