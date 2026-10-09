@@ -30,10 +30,19 @@ def ocr_image(image):
     global _ocr
     if '_ocr' not in globals():
         _ocr = RapidOCR(intra_op_num_threads=2, inter_op_num_threads=1)
-    result, _ = _ocr(np.asarray(image.convert('RGB')))
+    pixels=np.asarray(image.convert('RGB'))
+    result, _ = _ocr(pixels)
+    def quality(rows):
+        meaningful=[row for row in (rows or []) if row[1].strip()]
+        return float(sum(row[2] for row in meaningful)/len(meaningful)) if meaningful else 0.0
+    # An erroneous orientation classification can turn clear upright text into
+    # whitespace. Retry the original orientation before declaring it unreadable.
+    if quality(result)<.65:
+        upright, _ = _ocr(pixels,use_cls=False)
+        if quality(upright)>quality(result):result=upright
     if not result:
         return '', 0.0
-    return '\n'.join(row[1] for row in result), float(sum(row[2] for row in result) / len(result))
+    return '\n'.join(row[1] for row in result), quality(result)
 
 
 def extract(raw, media_type):

@@ -9,6 +9,19 @@ from backend.models.review_llm import LocalReviewLLM, _json_from_text
 SCHEMA = {'type': 'object', 'properties': {'ok': {'type': 'boolean'}}, 'required': ['ok'], 'additionalProperties': False}
 
 
+def test_local_context_budget_is_sent_to_ollama(monkeypatch):
+    monkeypatch.setenv('LEXIMIND_MODEL_CONTEXT_LENGTH','8192')
+    calls=[]
+    def respond(request):
+        calls.append(json.loads(request.content))
+        return httpx.Response(200,json={'message':{'content':'{"ok":true}'},'done':True,'done_reason':'stop'})
+    model=LocalReviewLLM.for_role('chat',provider='ollama',base_url='http://127.0.0.1:11434',deployment='local',transport=httpx.MockTransport(respond))
+    assert model.complete([{'role':'user','content':'test'}],SCHEMA)=={'ok':True}
+    assert calls[0]['options']['num_ctx']==8192
+    with pytest.raises(ValueError,match='context length'):
+        LocalReviewLLM(context_length=100)
+
+
 def client(respond, **kwargs):
     return LocalReviewLLM(transport=httpx.MockTransport(respond), **kwargs)
 

@@ -7,8 +7,90 @@ from fastapi.testclient import TestClient
 
 from backend.app import create_app
 from backend.drafting_engine import validate_final
-from backend.models.review_llm import ReviewModelError
+from backend.drafting_engine import supported_block
+from backend.drafting_engine import recover_source_refs
+from backend.models.review_llm import LocalReviewLLM, ReviewModelError
 from tests.test_common import upload, finish
+
+
+def test_court_holding_cannot_use_only_intake_even_when_mislabelled_fact():
+    from types import SimpleNamespace
+    item={'text':'The Supreme Court held that bail must be granted.','statement_type':'fact','source_ids':['E1']}
+    catalog={'E1':{'quote':item['text'],'chunk':{'document_id':'intake'}}}
+    docs={'intake':{'metadata':{'document_type':'user_input'}}}
+    assert not supported_block(item,SimpleNamespace(supported=True,statement_type='fact'),catalog,docs)
+
+
+def test_contractual_right_is_a_document_fact():
+    from types import SimpleNamespace
+    item={'text':'Either party has a right to terminate with 30 days notice.','statement_type':'fact','source_ids':['E1']}
+    catalog={'E1':{'quote':item['text'],'chunk':{'document_id':'contract'}}}
+    docs={'contract':{'metadata':{'document_type':'contract'}}}
+    assert supported_block(item,SimpleNamespace(supported=True,statement_type='fact'),catalog,docs)
+
+
+def test_missing_fact_citation_is_retrieved_without_promoting_intake_to_law():
+    items=[{'text':'The applicant has no prior criminal antecedents.','statement_type':'fact','source_ids':[]},
+           {'text':'The Supreme Court held that bail must be granted.','statement_type':'legal','source_ids':[]}]
+    packet=[{'source_id':'E1','document_type':'user_input','text':'facts.grounds: The applicant has no prior criminal antecedents. The Supreme Court held that bail must be granted.'}]
+    recover_source_refs(items,packet)
+    assert items[0]['source_ids']==['E1']
+    assert items[1]['source_ids']==[]
+
+
+def test_structured_bail_intake_produces_a_cited_draft_without_model_invention(drafting_client):
+    c,model=drafting_client
+    facts={'applicant_name':'Example Applicant','case_number':'12/2026','allegations':'The complainant alleges a payment of INR 5000. The applicant disputes the allegation.',
+           'arrest_status':'Arrested on 1 October 2026. The applicant is in judicial custody.',
+           'grounds':'The applicant has a fixed residence.\nThe applicant has no prior criminal antecedents.\nThe Supreme Court held that bail is automatic under invented law.',
+           'relief':'Regular bail on suitable conditions, including attendance before the trial court.'}
+    response=c.post('/api/v1/drafts',json={'document_type':'Bail Application','jurisdiction':'IN','court':'Example Sessions Court','instructions':'Prepare a bail application using the supplied allegations.','facts':facts})
+    data=response.json()['data'];wait(c,data['job_id'])
+    draft,_=generate(c,data['draft_id'])
+    assert draft['status']=='completed_with_warnings' and not model.calls
+    sections={s['heading']:s for s in draft['sections']}
+    assert {'Cause title','Background','Facts','Grounds','Authorities','Prayer','Proposed bail conditions','Signature'}<=sections.keys()
+    text='\n'.join(b['text'] for s in draft['sections'] for b in s['blocks'])
+    assert 'Example Applicant' in text and '5000' in text and 'fixed residence' in text
+    assert 'bail is automatic' not in text and 'invented law' not in text
+    assert draft['verification']['method']=='exact_captured_intake_fields'
+    assert len(draft['unresolved_placeholders'])==3
+    assert all(claim['citation_ids'] for claim in draft['claims'])
+    validate_final(draft,c.app.state.store.all('tenant-a','chunk'))
+    assert c.get('/api/v1/drafts/'+draft['id']+'/export?format=pdf').content.startswith(b'%PDF')
+
+
+def test_notice_free_text_prefills_exact_values_and_produces_a_draft(drafting_client):
+    c,model=drafting_client
+    response=c.post('/api/v1/drafts',json={'document_type':'notice','jurisdiction':'IN','instructions':'Prepare a payment notice from Alpha Ltd to Beta Ltd, requesting payment of INR 5000 by 15 October 2026 for invoice INV-101 dated 1 October 2026.'})
+    data=response.json()['data'];wait(c,data['job_id']);draft,_=generate(c,data['draft_id'])
+    assert draft['status']=='completed_with_warnings' and not model.calls
+    text='\n'.join(b['text'] for s in draft['sections'] for b in s['blocks'])
+    for value in ('Alpha Ltd','Beta Ltd','INR 5000','15 October 2026','INV-101','1 October 2026'):assert value in text
+    assert draft['facts']['demand']=='payment of INR 5000'
+    validate_final(draft,c.app.state.store.all('tenant-a','chunk'))
+
+
+def test_rejected_draft_block_is_repaired_and_checked_again(tmp_path):
+    calls=[]
+    class RepairModel(LocalReviewLLM):
+        def status(self):return {'ready':True,'model':self.metadata}
+        def complete(self,messages,schema,cancelled=lambda:False):
+            payload=json.loads(messages[-1]['content']);calls.append(payload)
+            if 'rejected_blocks' in payload:
+                return {'repairs':[{'id':i['id'],'block':{'kind':'paragraph','text':'Please respond to this notice.','statement_type':'draft_language','source_ids':[]}} for i in payload['rejected_blocks']]}
+            if 'blocks' in payload:
+                return {'decisions':[{'id':i['id'],'supported':'fabricated' not in i['text'],'statement_type':i['declared_type'],'reason':'Unsupported law' if 'fabricated' in i['text'] else 'Proposed request'} for i in payload['blocks']]}
+            return {'sections':[{'heading':'Notice','blocks':[{'kind':'paragraph','text':'The recipient must pay under fabricated statute 999.','statement_type':'legal','source_ids':[]}]}]}
+    app=create_app(tmp_path,{'alice':'tenant-a'},review_engine='extractive',drafting_llm=RepairModel())
+    with TestClient(app) as c:
+        c.headers['Authorization']='Bearer alice'
+        rid=create(c);draft,_=generate(c,rid)
+        assert draft['status']=='completed_with_warnings'
+        assert draft['sections'][0]['blocks'][0]['text']=='Please respond to this notice.'
+        assert draft['sections'][0]['blocks'][0]['verification_status']=='checked'
+        assert sum('blocks' in p for p in calls)==2
+    app.state.store.close()
 
 
 class DraftModel:
@@ -25,6 +107,7 @@ class DraftModel:
             return {'decisions':result}
         if 'edited_sections' in payload:
             return {'sections':[{'heading':s['heading'],'blocks':[{'kind':b['kind'],'text':b['text'],'statement_type':'draft_language','source_ids':[]} for b in s['blocks']]} for s in payload['edited_sections']]}
+        if self.mode=='title_only':return {'sections':[{'heading':'Notice','blocks':[{'kind':'heading','text':'Payment reminder notice','statement_type':'draft_language','source_ids':[]}]}]}
         ref=next(s for s in payload['sources'] if 'facts.sender' in s['text'])
         return {'sections':[{'heading':'Facts','blocks':[
             {'kind':'paragraph','text':'The sender states that their name is Example Sender.','statement_type':'fact','source_ids':[ref['source_id']]},
@@ -95,6 +178,12 @@ def test_intake_acknowledgement_grounding_and_exports(drafting_client):
     events=client.get(f'/api/v1/jobs/{job["job_id"]}/events').text
     assert 'job.completed' in events and 'verifying' in events
     assert client.get('/api/v1/models').json()['data'][1]['workflow']=='drafting'
+
+
+def test_title_only_output_is_not_a_completed_draft(drafting_client):
+    c,model=drafting_client;rid=create(c);model.mode='title_only'
+    draft,_=generate(c,rid)
+    assert draft['status']=='failed' and draft['failure']['code']=='NO_SUPPORTED_DRAFT'
 
 
 def test_blocking_fields_and_answers(drafting_client):

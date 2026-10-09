@@ -25,10 +25,11 @@ export class HomepageView {
             <em>Automated.</em>
           </h1>
           <p class="hero-subtitle">Analyze. Research. Draft. Decide.</p>
-          <button class="btn btn-gold" id="btn-hero-new-query">
-            <span>Start a New Query</span>
+          <button class="btn btn-gold" id="home-upload">
+            <span>Upload & summarize</span>
             ${Icons.arrowRight('', 16)}
           </button>
+          <button class="btn btn-secondary" id="btn-hero-new-query">Use a saved document</button>
         </div>
 
         <!-- Center Classical Scales Emblem -->
@@ -42,7 +43,7 @@ export class HomepageView {
         <div class="hero-feature-pills">
           <div class="hero-pill-item supplied-7c0f86ab54" id="pill-understand-docs">
             <span class="hero-pill-icon">${Icons.fileText('', 16)}</span>
-            <span>Understand legal documents</span>
+            <span>Read and summarize documents</span>
           </div>
           <div class="hero-pill-item supplied-7c0f86ab54" id="pill-find-cases">
             <span class="hero-pill-icon">${Icons.search('', 16)}</span>
@@ -50,28 +51,28 @@ export class HomepageView {
           </div>
           <div class="hero-pill-item supplied-7c0f86ab54" id="pill-draft-docs">
             <span class="hero-pill-icon">${Icons.edit('', 16)}</span>
-            <span>Draft accurate legal documents</span>
+            <span>Create a legal draft</span>
           </div>
           <div class="hero-pill-item supplied-7c0f86ab54" id="pill-ai-agent">
             <span class="hero-pill-icon">${Icons.bot('', 16)}</span>
-            <span>Work with your AI agent</span>
+            <span>Ask about your documents</span>
           </div>
         </div>
       </div>
 
       <!-- 2. 4-COLUMN FEATURE CARDS -->
       <div class="feature-cards-grid">
-        <!-- Card 1: Document Analysis -->
+        <!-- Card 1: Read a Document -->
         <div class="feature-box" id="card-feature-review">
           <div>
             <div class="feature-box-icon">${Icons.fileText('', 22)}</div>
-            <h3 class="feature-box-title">Document Analysis</h3>
+            <h3 class="feature-box-title">Read a Document</h3>
             <p class="feature-box-desc">
-              Upload and get instant insights, key clauses, risks and summaries.
+              Upload a file and receive a plain-language summary with source links.
             </p>
           </div>
           <div class="feature-box-action">
-            <span>Analyze Document</span>
+            <span>Read Document</span>
             ${Icons.arrowRight('', 15)}
           </div>
         </div>
@@ -106,17 +107,17 @@ export class HomepageView {
           </div>
         </div>
 
-        <!-- Card 4: Autonomous Agent -->
+        <!-- Card 4: Ask a Question -->
         <div class="feature-box" id="card-feature-agent">
           <div>
             <div class="feature-box-icon">${Icons.bot('', 22)}</div>
-            <h3 class="feature-box-title">Autonomous Agent</h3>
+            <h3 class="feature-box-title">Ask a Question</h3>
             <p class="feature-box-desc">
-              Inspect workflow results and trace claims to stored evidence.
+              Ask questions about your uploaded documents and get cited answers.
             </p>
           </div>
           <div class="feature-box-action">
-            <span>Activate Agent</span>
+            <span>Open Chat</span>
             ${Icons.arrowRight('', 15)}
           </div>
         </div>
@@ -238,6 +239,7 @@ export class HomepageView {
   }
 
   _bindEvents() {
+    this.container.querySelector('#home-upload').onclick=async()=>{await this.onNavigate('workflow-1');document.querySelector('#reader-file')?.click();};
     // Hero Actions
     this.container.querySelector('#btn-hero-new-query')?.addEventListener('click', () => this.onNavigate('workflow-1'));
     this.container.querySelector('#pill-understand-docs')?.addEventListener('click', () => this.onNavigate('workflow-1'));
@@ -249,7 +251,7 @@ export class HomepageView {
     this.container.querySelector('#card-feature-review')?.addEventListener('click', () => this.onNavigate('workflow-1'));
     this.container.querySelector('#card-feature-research')?.addEventListener('click', () => this.onNavigate('workflow-3'));
     this.container.querySelector('#card-feature-drafting')?.addEventListener('click', () => this.onNavigate('workflow-2'));
-    this.container.querySelector('#card-feature-agent')?.addEventListener('click', () => this.onNavigate('novelty'));
+    this.container.querySelector('#card-feature-agent')?.addEventListener('click', () => this.onNavigate('workflow-4'));
 
     // Activities
     this.container.querySelector('#link-view-all-activity')?.addEventListener('click', () => this.onNavigate('documents'));

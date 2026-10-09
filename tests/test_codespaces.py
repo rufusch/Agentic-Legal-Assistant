@@ -31,6 +31,27 @@ def test_invalid_forwarded_hostname_rejected():
         configure({'CODESPACE_NAME': 'space/invalid', 'GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN': 'app.github.dev'})
 
 
+def test_codespaces_default_domain():
+    env, origin = configure({'CODESPACE_NAME': 'sample-space'})
+    assert origin == 'https://sample-space-8000.app.github.dev'
+    assert env['BACKEND_CORS_ORIGINS'] == origin
+
+
+def test_direct_uvicorn_forwarded_writes(tmp_path, monkeypatch):
+    monkeypatch.setenv('CODESPACE_NAME', 'sample-space')
+    monkeypatch.delenv('GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN', raising=False)
+    monkeypatch.delenv('BACKEND_CORS_ORIGINS', raising=False)
+    from backend.app import create_app
+    app = create_app(tmp_path, {'test': 'tenant'}, start_worker=False)
+    with TestClient(app, base_url='http://internal:8000') as client:
+        headers = {'Authorization': 'Bearer test', 'Origin': 'https://sample-space-8000.app.github.dev'}
+        body = {'file_name': 'source.txt', 'content_type': 'text/plain', 'size_bytes': 1, 'sha256': '0' * 64}
+        assert client.post('/api/v1/documents/uploads', headers=headers, json=body).status_code == 201
+        headers['Origin'] = 'https://another-space-8000.app.github.dev'
+        assert client.post('/api/v1/documents/uploads', headers=headers, json=body).status_code == 403
+    app.state.store.close()
+
+
 def test_real_admin_token_accepts_forwarded_origin_without_demo(tmp_path, monkeypatch):
     env, origin = configure({**os.environ, 'BACKEND_STORAGE': str(tmp_path),
         'CODESPACE_NAME': 'test-space', 'GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN': 'app.github.dev'})

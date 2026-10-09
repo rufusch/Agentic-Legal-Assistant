@@ -70,6 +70,15 @@ class ProposedDraft(Strict):
     sections: list[ProposedSection] = Field(min_length=1, max_length=13)
 
 
+class DraftRepair(Strict):
+    id: UUID
+    block: ProposedBlock
+
+
+class DraftRepairs(Strict):
+    repairs: list[DraftRepair] = Field(max_length=5)
+
+
 class BlockDecision(Strict):
     id: UUID
     supported: bool

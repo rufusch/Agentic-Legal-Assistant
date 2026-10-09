@@ -118,12 +118,18 @@ def install(app, store, worker, get, envelope, APIError, idempotent, drafting_ll
                     store.event(jid,'job.progress',status=stage,progress=value,message=message)
             if job['phase']=='requirements':
                 progress('checking_requirements',.5,'Checking intake fields and recording unresolved information')
+                from backend.drafting_templates import prefill_notice_instructions
+                prefill_notice_instructions(draft)
                 sources=[get(tenant,'document',i) for i in draft['supporting_document_ids']]
                 draft['requirements']=requirements(draft);prefill(draft,sources,[c for c in store.all(tenant,'chunk') if c['document_id'] in set(draft['supporting_document_ids'])]);refresh_status(draft)
                 draft['warnings']=[warning('missing_information','Intake checklist scope','This is a drafting intake checklist, not a certified jurisdictional filing checklist. Supporting evidence is strongly recommended.','info')]
             else:
                 progress('retrieving',.15,'Retrieving relevant case evidence, tenant authorities and style examples')
-                official=app.state.official_sources.enrich(tenant,draft['instructions']+' '+draft['document_type'],lambda:worker.cancelled(tenant,jid))
+                from backend.drafting_templates import has_structured_draft
+                if job['phase']!='verify' and has_structured_draft(draft):
+                    official={'enabled':False,'sources':[],'failures':[],'reason':'Literal intake assembly; legal authority remains explicitly unresolved.'}
+                else:
+                    official=app.state.official_sources.enrich(tenant,draft['instructions']+' '+draft['document_type'],lambda:worker.cancelled(tenant,jid))
                 with store.transaction():
                     documents,chunks,examples=retrieve(tenant,draft)
                     draft['retrieval']['official_sources']=official

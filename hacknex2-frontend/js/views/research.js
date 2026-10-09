@@ -101,7 +101,7 @@ export class ResearchView {
       } else {
         listEl.innerHTML = this.docs.map(d => `
           <label class="supplied-3f288d39e2">
-            <input type="checkbox" value="${d.id}" class="doc-cb" />
+            <input type="checkbox" value="${d.id}" class="doc-cb" ${this.form.document_ids.includes(d.id)?'checked':''} />
             <span class="supplied-7ba9bad628">${esc(d.name)}</span>
           </label>
         `).join('');
@@ -123,11 +123,12 @@ export class ResearchView {
       statusDiv.textContent = `Uploading ${files.length} file(s)...`;
       const button=this.el.querySelector('#res-submit');button.disabled=true;
       try {
-        for(const file of files) await LegalApiClient.uploadDocument(file,{title:file.name,document_type:'case',jurisdiction:'IN'});
-        window.showToast?.('Documents parsed and ready. Select them as context.','success');
+        for(const file of files){const doc=(await LegalApiClient.uploadDocument(file,{title:file.name,document_type:'case',jurisdiction:'IN'})).data;if(!this.form.document_ids.includes(doc.id))this.form.document_ids.push(doc.id);}
+        window.showToast?.('Documents ready and selected.','success');
         this.form.question=this.el.querySelector('#res-question').value;
         this.form.jurisdiction=this.el.querySelector('#res-jurisdiction').value;
         await this._renderSetup();
+        if(this.form.question.trim().length>=5)this.el.querySelector('#res-submit').click();
       } catch(e){statusDiv.textContent=e.message;window.showToast?.(e.message,'error');}
       finally{button.disabled=false;}
 

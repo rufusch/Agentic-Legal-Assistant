@@ -182,11 +182,11 @@ class OfficialSources:
             if key not in latest or d['metadata'].get('fetched_timestamp',0)>latest[key]['metadata'].get('fetched_timestamp',0):latest[key]=d
         return list(latest.values())
 
-    def enrich(self,tenant,question,cancelled=lambda:False):
+    def enrich(self,tenant,question,cancelled=lambda:False,document_types=None):
         result={'enabled':self.enabled,'discovery':'local catalog of official URLs; not an exhaustive court search',
                 'sources':[],'failures':[],'currency_certified':False}
         if not self.enabled:return result
-        for item in self.discover(question,3):
+        for item in [i for i in self.discover(question,12) if document_types is None or i['document_type'] in document_types][:3]:
             if cancelled():break
             try:
                 doc=self.import_source(tenant,item['url'],item['title'],item['document_type'],cancelled)

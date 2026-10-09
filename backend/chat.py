@@ -19,6 +19,7 @@ from backend.research_schema import Checks
 from backend.retrieval import search
 from backend.review_engine import warning
 from backend.context_budget import source_budget
+from backend.verification_batches import verify_batches
 
 BUDGET = 18000
 
@@ -150,18 +151,34 @@ def install(app, store, worker, get, envelope, APIError, idempotent, chat_llm=No
             convo = store.get(tenant, 'conversation', message['conversation_id']) or {}
             history = sorted([m for m in store.all(tenant, 'chat_message') if m['conversation_id']==message['conversation_id'] and m['created_at'] < message['created_at'] and m['status'] in TERMINAL], key=lambda m:m['created_at'])[-6:]
             query, followup = retrieval_query(question, history)
+            reader_format = convo.get('settings', {}).get('response_format')
+            reader = reader_format in {'document_summary','document_answer'}
+            selected_ids=set(ids)
+            if reader:
+                # Discover law from document contents, not a generic summarisation instruction.
+                selected_text = ' '.join(c['text'] for c in store.all(tenant, 'chunk') if c['document_id'] in selected_ids)[:16000]
+                query = selected_text + ' ' + question
             official=app.state.official_sources
-            official_result=official.enrich(tenant,query,cancelled)
-            if official.enabled:
+            official_result=(official.enrich(tenant,query,cancelled,document_types={'statute'}) if reader else official.enrich(tenant,query,cancelled)) if convo.get('settings',{}).get('include_official_sources',True) else {'enabled':False,'sources':[],'failures':[]}
+            if official_result.get('enabled'):
                 # User documents remain fact/context evidence. Only verified imports supply law.
-                current=official.current_documents(tenant);current_ids={d['id'] for d in current}
+                current=official.current_documents(tenant)
+                if reader:
+                    retrieved_ids={s['document_id'] for s in official_result.get('sources', [])}
+                    current=[d for d in current if d['id'] in retrieved_ids and d['metadata'].get('document_type')=='statute']
+                current_ids={d['id'] for d in current}
                 documents=[d for d in documents if d['metadata'].get('document_type') not in {'statute','judgment','secondary'} or d['id'] in current_ids]
                 documents += [d for d in current if d['id'] not in {v['id'] for v in documents}]
                 ids={d['id'] for d in documents}
                 message['source_document_ids']=sorted(ids)
             pool = [c for c in store.all(tenant, 'chunk') if c['document_id'] in ids]
             chunks = []; size = 0;budget=source_budget(llm,BUDGET)
-            for c in search(pool, query, 10):
+            # Reserve context for the user's selected evidence before supplemental law.
+            # Otherwise a long statute can crowd out the very agreement being asked about.
+            selected_pool=[c for c in pool if c['document_id'] in selected_ids]
+            selected_chunks=search(selected_pool, query, 10)
+            ranked=selected_chunks+[c for c in search(pool, query, 10) if c['id'] not in {s['id'] for s in selected_chunks}]
+            for c in ranked:
                 if size + len(c['text']) <= budget: chunks.append(c); size += len(c['text'])
             info = agent.verification_info(llm, checker); independent = info['independent_verifier']
             message.update(claims=[], citations=[], warnings=[], agent_trace=[], verification={**info,'method':'exact_source_spans_and_second_llm_pass','items':[]}, retrieval={'chunk_ids':[c['id'] for c in chunks], 'context_characters':size, 'query':query, 'followup':followup})
@@ -178,14 +195,18 @@ def install(app, store, worker, get, envelope, APIError, idempotent, chat_llm=No
                     context = {'question':question, 'history':[{'role':m['role'],'content':m['content'][:1500]} for m in history], 'sources':packet}
                     if summary: context['conversation_summary_not_evidence'] = summary
                     if feedback: context.update(feedback)
-                    sent = [{'role':'system','content':SYSTEM}, {'role':'user','content':json.dumps(context,ensure_ascii=False)}]
+                    reader_prompt = ''' Write the document summary as consecutive, naturally connected sentences forming one prose paragraph, in reading order: purpose, parties, key facts, dates, amounts and stated next steps. Each fact proposition is one or two complete sentences of that paragraph; no bullets, headings, repeated attribution prefixes or risk audit. Attribute allegations accurately. Summarise only the selected uploaded document in fact propositions. Separately provide kind=legal propositions only for relevant laws or rules actually supported by official statute excerpts; name the Act/rule and section when present. At most two legal propositions: each must name its Act or rule and explain a direct connection to a specific term or issue in this document. Omit generic lists of validity conditions, fraud, public policy or other legal doctrines unless the document raises those issues. Do not infer applicability just from a keyword match.''' if reader else ''
+                    if reader_format=='document_answer':
+                        reader_prompt=''' Answer the specific question directly in a short, connected paragraph, rather than summarising the whole document. Use fact propositions for the selected document and legal propositions only for verified official statutes. Every legal proposition must name its Act or rule. Distinguish allegations, procedural possibilities and established events. Do not predict arrest, bail, guilt or a court outcome. If the sources cannot establish what will happen, say what they establish without claiming certainty. No bullets or risk audit.'''
+                    context['selected_document_names']=[d['name'] for d in documents if d['id'] in selected_ids]
+                    sent = [{'role':'system','content':SYSTEM + reader_prompt}, {'role':'user','content':json.dumps(context,ensure_ascii=False)}]
                     proposed = Answer.model_validate(llm.complete(sent, Answer.model_json_schema(), cancelled))
                     items = [{'id':uid(), **p.model_dump()} for p in proposed.propositions]
                     for item in items:
-                        if item['kind']=='fact' and not item['text'].startswith('According to the selected source'): item['text']='According to the selected source: '+item['text']
+                        if not reader and item['kind']=='fact' and not item['text'].startswith('According to the selected source'): item['text']='According to the selected source: '+item['text']
                     return items, sent
                 def check(items, packet, catalog):
-                    checks = Checks.model_validate(checker.complete([{'role':'system','content':CHECK}, {'role':'user','content':json.dumps({'items':items,'sources':packet},ensure_ascii=False)}], verification_schema(Checks,items), cancelled))
+                    checks = verify_batches(checker,Checks,CHECK,items,lambda batch:{'items':batch,'sources':[p for p in packet if p['source_id'] in {s for i in batch for s in i['source_ids']}]},cancelled)
                     decisions = {str(d.id):d for d in checks.decisions}
                     if len(decisions)!=len(checks.decisions) or set(decisions)!={i['id'] for i in items}: raise ValueError('Incomplete verification')
                     keys = {p['source_id'] for p in packet}; out = {}
@@ -195,6 +216,13 @@ def install(app, store, worker, get, envelope, APIError, idempotent, chat_llm=No
                         valid_refs = all(r in keys for r in refs)
                         valid_values = material_values_supported(item['text'],[catalog[r]['quote'] for r in refs if r in keys])
                         valid_authority = item['kind']!='legal' or bool(types & {'statute','judgment'})
+                        if reader:
+                            if item['kind']=='legal':
+                                valid_authority=bool(refs) and all(r in keys and docs[catalog[r]['chunk']['document_id']]['metadata'].get('document_type')=='statute' and official.verified(tenant,docs[catalog[r]['chunk']['document_id']]) for r in refs)
+                                names=[re.sub(r'^the\s+', '', docs[catalog[r]['chunk']['document_id']]['name'].split(',')[0], flags=re.I).strip().casefold() for r in refs if r in keys]
+                                valid_authority=valid_authority and any(name in item['text'].casefold() for name in names)
+                            else:
+                                valid_authority=all(r in keys and catalog[r]['chunk']['document_id'] in selected_ids for r in refs)
                         d = decisions[item['id']]; ok = d.supported and valid_refs and valid_values and valid_authority
                         reason = d.reason if not d.supported or ok else 'Unknown source id' if not valid_refs else 'Numbers not in cited quotes' if not valid_values else 'Legal proposition lacks statute/judgment source'
                         out[item['id']] = {'supported':bool(ok), 'reason':reason, 'authority_ok':valid_authority if item['kind']=='legal' else None}
@@ -216,6 +244,18 @@ def install(app, store, worker, get, envelope, APIError, idempotent, chat_llm=No
                     accepted.append({k:v for k,v in item.items() if k!='id'})
                 message['citations'] = list(citations.values())
             message['content'] = '\n\n'.join(c['text'] for c in message['claims']) or 'The selected documents do not provide enough verified evidence to answer. Attach relevant documents or narrow the question.'
+            if reader:
+                fact_ids={i['item']['id'] for i in result['accepted'] if i['item']['kind']=='fact'} if chunks else set()
+                # Accepted sentences were generated together as prose and checked individually.
+                message['content']=' '.join(c['text'].strip() for c in message['claims'] if c['id'] in fact_ids) or 'The document did not provide enough readable, supported information for a summary.'
+                law_claims=[c for c in message['claims'] if c['id'] not in fact_ids]
+                law_cids={cid for c in law_claims for cid in c['citation_ids']}
+                message['legal_context']=' '.join(c['text'] for c in law_claims)
+                if reader_format=='document_answer' and message['claims']:
+                    message['content']=' '.join(c['text'].strip() for c in message['claims'])
+                    message['legal_context']=''
+                message['legal_sources']=[c for c in message['citations'] if c['id'] in law_cids]
+                message['document_evidence']=[c for c in message['citations'] if c['document_id'] in selected_ids]
             message['warnings'] = [warning('weak_authority','Source support limits','Only bounded excerpts from selected workspace documents were considered. '+('An independent verifier model checked support' if independent else 'Same-model checks may miss errors')+'; human legal review is required.')]
             if any(d.get('ocr_used') for d in documents): message['warnings'].append(warning('ocr_quality','OCR source','Selected sources include OCR text; verify against the original scan.'))
             retried = sum(t['round']>1 and t['accepted'] for t in message['agent_trace'])

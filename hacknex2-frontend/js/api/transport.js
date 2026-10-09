@@ -2,6 +2,10 @@
 export class ApiError extends Error {
   constructor(status, error) { super(error.message); this.name = 'ApiError'; this.status = status; Object.assign(this, error); }
 }
+export function fileMediaType(file) {
+  const types = {doc:'application/msword',pdf:'application/pdf',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',txt:'text/plain',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',tif:'image/tiff',tiff:'image/tiff'};
+  return types[file.name.split('.').pop().toLowerCase()] || file.type;
+}
 export function createApiClient({ baseUrl, getToken }) {
   const base = new URL(baseUrl.replace(/\/$/, '') + '/');
   function endpoint(path) {
@@ -26,7 +30,7 @@ export function createApiClient({ baseUrl, getToken }) {
   async function json(path, options) { const response = await request(path, options); return (await response.json()).data; }
   async function upload(file, metadata = {}, signal) {
     const types = { doc: 'application/msword', pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', txt: 'text/plain', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', tif: 'image/tiff', tiff: 'image/tiff' };
-    const content_type = file.type || types[file.name.split('.').pop().toLowerCase()];
+    const content_type = fileMediaType(file);
     const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
     const sha256 = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
     const ticket = await json('documents/uploads', { method: 'POST', body: { file_name: file.name, content_type, size_bytes: file.size, sha256 }, idempotencyKey: crypto.randomUUID(), signal });

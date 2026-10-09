@@ -3,13 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CaseLens | Evidence-Grounded Legal AI</title>
+  <title>CaseLens | Your document workspace</title>
   <meta name="description" content="CaseLens reviews contracts and case files, drafts legal documents, and researches authorities with every finding linked to its exact source.">
-  
-  <!-- Modern & Luxury Typography from Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
   
   <!-- Stylesheets -->
   <link rel="stylesheet" href="css/design-system.css">
@@ -17,6 +12,7 @@
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/review.css">
   <link rel="stylesheet" href="css/supplied-layout.css">
+  <link rel="stylesheet" href="css/simple.css">
 </head>
 <body>
 
@@ -41,7 +37,7 @@
             <span class="brand-name" id="app-brand-title">
               CaseLens
             </span>
-            <span class="brand-subtitle">Evidence-Grounded Legal AI</span>
+            <span class="brand-subtitle">Your document workspace</span>
           </div>
         </div>
 
@@ -60,7 +56,7 @@
               <span class="nav-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
               </span>
-              <span>AI Assistant</span>
+              <span>Ask a question</span>
             </button>
           </li>
           <li>
@@ -68,7 +64,7 @@
               <span class="nav-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
               </span>
-              <span>Contract / Case Review</span>
+              <span>Read a document</span>
             </button>
           </li>
           <li>
@@ -76,7 +72,7 @@
               <span class="nav-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               </span>
-              <span>Legal Research</span>
+              <span>Research</span>
             </button>
           </li>
           <li>
@@ -84,7 +80,7 @@
               <span class="nav-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               </span>
-              <span>Drafting</span>
+              <span>Write a draft</span>
             </button>
           </li>
           <li>
@@ -92,8 +88,8 @@
               <span class="nav-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
               </span>
-              <span>Case Law & Documents</span>
-              <span class="nav-badge" id="nav-badge-docs-count">6</span>
+              <span>Documents</span>
+              <span class="nav-badge" id="nav-badge-docs-count">0</span>
             </button>
           </li>
 
@@ -126,7 +122,7 @@
         <span class="header-search-icon">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </span>
-        <input type="text" class="header-search-input" placeholder="Search laws, cases, statutes, or ask anything..." />
+        <input type="text" class="header-search-input" placeholder="Search your documents..." />
         <span class="header-search-shortcut">⌘ K</span>
       </div>
 
@@ -134,7 +130,7 @@
         <!-- Tenant isolation status indicator -->
         <div class="tenant-pill" title="Tenant: Apex-Legal-Enterprise (Isolated)">
           <span class="tenant-dot"></span>
-          <span>Tenant: Apex-Enterprise</span>
+          <span>Workspace</span>
         </div>
 
         <!-- Notification Bell -->
@@ -146,7 +142,7 @@
         <!-- User Profile -->
         <div class="user-profile-btn">
           <div class="user-avatar">DS</div>
-          <span class="user-name">Daniel Smith</span>
+          <span class="user-name">Workspace</span>
           <span class="user-caret">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </span>

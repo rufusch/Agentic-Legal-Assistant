@@ -299,7 +299,6 @@ export class ChatView {
     fileInput.addEventListener('change', async e => {
       const files=Array.from(e.target.files); if(!files.length)return;
       if(this.uploading||this.activeJobId)return;
-      this.uploading=true;if(this.uploading||this.activeJobId)return;
       this.uploading=true;const button=this.el.querySelector('#chat-send');button.disabled=true;
       try {for(const f of files){const d=(await LegalApiClient.uploadDocument(f,{document_type:'case',jurisdiction:'IN',title:f.name})).data;this.docs.push({id:d.id,name:d.name});this.selectedDocs.push(d.id);}this._renderAttachedResources();window.app.updateDocBadgeCount();window.showToast?.('Documents parsed and attached.','success');}
       catch(e){window.showToast?.(e.message,'error');}finally{this.uploading=false;button.disabled=Boolean(this.activeJobId);fileInput.value='';}

@@ -1,0 +1,26 @@
+/* Keep direct workflows and responsive access in the original burgundy/ivory UI. */
+.sidebar-agent-card,.header-search-shortcut,.user-caret,.rv-eyebrow{display:none!important}
+.view-panel{max-width:1200px;margin:0 auto}
+.simple-options{margin:18px 0;padding:12px 0;border-top:1px solid #e4e2e5}
+.simple-options summary{cursor:pointer;font-weight:600;margin-bottom:12px}
+.rv-setup-grid{grid-template-columns:1fr!important;gap:18px}
+.rv-suggest,.rv-counter{display:none}
+.rv-actions{position:static!important;box-shadow:none!important}
+.pipeline-stages{display:none!important}
+button:focus-visible,summary:focus-visible{outline:3px solid #9475b8;outline-offset:3px}
+@media(max-width:800px){
+ .app-sidebar{position:static;width:100%;padding:12px;overflow:visible}
+ .app-container{display:block}
+ .brand-section{padding:0 0 12px;margin-bottom:10px}
+ .nav-list{display:flex;flex-direction:row;flex-wrap:wrap;gap:4px}
+ .nav-list li{flex:1 0 auto}
+ .nav-item-btn{padding:10px;font-size:13px}
+ .app-header{position:static;left:0;padding:12px;height:auto}
+ .app-main{margin-left:0;width:100%;padding:20px 12px;margin-top:0}
+ .hero-banner{display:block;padding:24px}
+ .hero-title{font-size:2.3rem}
+ .hero-sculpture-wrap,.hero-feature-pills{display:none}
+ .hero-content-left{width:100%;max-width:100%}
+ .feature-cards-grid,.dashboard-bottom-grid,.rv-row2{grid-template-columns:1fr}
+ .tenant-pill{display:none}
+}

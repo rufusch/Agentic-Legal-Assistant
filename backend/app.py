@@ -68,7 +68,11 @@ def create_app(storage=None, tokens=None, encryption_key=None, *, start_worker=T
     s = Store(storage or os.getenv('BACKEND_STORAGE', '.data'), encryption_key or os.getenv('BACKEND_ENCRYPTION_KEY'))
     auth = tokens if tokens is not None else json.loads(os.getenv('BACKEND_TOKENS', '{}'))
     demo = os.getenv('BACKEND_DEMO') == '1' if demo is None else demo
-    cors_origins = [x.strip().rstrip('/') for x in os.getenv('BACKEND_CORS_ORIGINS','').split(',') if x.strip()]
+    # Derive only this Codespace's exact origin, including when started directly
+    # with uvicorn instead of the wrapper. Never trust arbitrary forwarded hosts.
+    from scripts.run_codespaces import configure
+    deployment_env, _ = configure(os.environ)
+    cors_origins = [x.strip().rstrip('/') for x in deployment_env.get('BACKEND_CORS_ORIGINS','').split(',') if x.strip()]
     if any(x=='*' or not x.startswith(('https://','http://')) for x in cors_origins):
         raise ValueError('Specify exact frontend origins in BACKEND_CORS_ORIGINS.')
     signing, startup = secrets.token_bytes(32), time.time()

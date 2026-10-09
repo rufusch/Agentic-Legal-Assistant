@@ -136,7 +136,7 @@ export function renderPipelineTracker(job) {
       <div class="pipeline-header">
         <div>
           <span class="supplied-2e841a45e8">
-            Shared Legal Pipeline Status
+            Progress
           </span>
           <span class="badge ${currentStatus.startsWith('completed') ? 'badge-ready' : 'badge-processing'} supplied-db4dd366ec">
             ${currentStatus.toUpperCase()}

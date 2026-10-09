@@ -10,6 +10,7 @@ import { HomepageView } from './views/homepage.js';
 import { DocumentsHubView } from './views/documents-hub.js';
 import { WorkflowPlaceholderView } from './views/workflow-placeholder.js';
 import { ReviewView } from './views/review.js';
+import { ReaderView } from './views/reader.js';
 import { DraftingView } from './views/drafting.js';
 
 import { ResearchView } from './views/research.js';
@@ -38,7 +39,18 @@ class App {
   constructor() {
     this.currentView = 'homepage';
     this.views = {};
-    this.init().catch(error=>window.showToast(error.message,'error'));
+    this._start();
+  }
+
+  _start() {
+    this.init().catch(error=>{
+      window.showToast(error.message,'error');
+      const panel=document.querySelector('.app-main');
+      const retry=document.createElement('section');retry.className='card';
+      const message=document.createElement('p');message.setAttribute('role','alert');message.textContent=error.message || 'Could not connect to CaseLens.';
+      const button=document.createElement('button');button.className='btn btn-primary';button.textContent='Retry connection';
+      button.onclick=()=>{retry.remove();this._start();};retry.append(message,button);panel.prepend(retry);
+    });
   }
 
   async init() {
@@ -64,7 +76,7 @@ class App {
     this.views['documents'] = new DocumentsHubView(docsEl);
 
     // Milestones 2-6 Placeholders
-    this.views['workflow-1'] = new ReviewView(wf1El, (target) => this.navigateTo(target));
+    this.views['workflow-1'] = new ReaderView(wf1El);
 
     this.views['workflow-2'] = new DraftingView(wf2El, (target) => this.navigateTo(target));
 
@@ -98,7 +110,7 @@ class App {
 
     window.addEventListener('hashchange', () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash && hash !== this.currentView) {
+      if (this.views[hash] && hash !== this.currentView) {
         this.navigateTo(hash);
       }
     });
@@ -132,7 +144,15 @@ class App {
       targetPanel.classList.add('active');
       // Render view
       if (this.views[viewName].render) {
-        await this.views[viewName].render();
+        try {
+          await this.views[viewName].render();
+        } catch (error) {
+          window.showToast?.(error.message || 'Could not load this page', 'error');
+          if (!targetPanel.textContent.trim()) {
+            targetPanel.innerHTML = '<section class="card"><h2>Could not load this page</h2><p role="alert">' + escapeHtml(error.message || 'Check your connection and try again.') + '</p><button class="btn btn-primary" type="button">Retry</button></section>';
+            targetPanel.querySelector('button').onclick = () => this.navigateTo(viewName);
+          }
+        }
       }
     }
 

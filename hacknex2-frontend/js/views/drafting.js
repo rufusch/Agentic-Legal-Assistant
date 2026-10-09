@@ -90,7 +90,7 @@ export class DraftingView {
         <div class="view-title-group">
           <div class="rv-eyebrow">Workflow 2 &middot; Legal Drafting Engine</div>
           <h1>New Draft</h1>
-          <p class="view-subtitle">Draft any legal document. Describe the document you need and provide instructions. CaseLens will identify missing information and prepare your draft.</p>
+          <p class="view-subtitle">Describe what you need and optionally attach a file. Your draft will mark unknown details in brackets.</p>
         </div>
       </div>
 
@@ -127,6 +127,9 @@ export class DraftingView {
         <section class="card rv-card">
           <h3 class="supplied-726cf47beb">2. Supporting Documents (Optional)</h3>
           <p class="rv-help">Select uploaded files to provide context or evidence for this draft.</p>
+          <label class="rv-label" for="df-upload">Attach a file</label>
+          <input id="df-upload" class="input" type="file" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.tif,.tiff" />
+          <p id="df-upload-status" role="status"></p>
           <div class="rv-doc-list" id="df-doc-list">
             ${readyDocs.length === 0 ? '<div class="rv-empty">No ready documents.</div>' : readyDocs.map(d => {
               const checked = this.form.supporting_document_ids.includes(d.id);
@@ -142,18 +145,31 @@ export class DraftingView {
       </div>
 
       <div class="rv-actions">
-        <button class="btn btn-primary" id="df-submit"><span>Analyze Requirements</span>${Icons.arrowRight('', 15)}</button>
+        <button class="btn btn-primary" id="df-submit"><span>Create draft</span>${Icons.arrowRight('', 15)}</button>
       </div>
     `;
+    if(this.lastError){const alert=document.createElement('p');alert.setAttribute('role','alert');alert.textContent=this.lastError;this.el.querySelector('.view-header').after(alert);}
     this._bindSetup();
     const history=await DraftingApi.list().then(res=>res.data.items).catch(error=>{window.showToast?.(error.message || 'Could not load previous drafts','error');return [];});
     const card=document.createElement('section');card.className='card';card.style.marginTop='1.5rem';
     const title=document.createElement('h3');title.textContent='Previous drafts';card.append(title);
-    for(const d of history){const b=document.createElement('button');b.className='btn btn-secondary';b.style.margin='0.5rem';b.textContent=d.title+' · '+d.status;b.onclick=async()=>{this.draftId=d.id;this.jobId=d.job_id;if(['awaiting_information','ready_to_draft'].includes(d.status))await this._loadRequirements();else if(['completed','completed_with_warnings'].includes(d.status))await this._loadDraftData();else{this.state=d.status;this._renderRunning();this.sub?.close();this.sub=LegalApiClient.subscribeJobEvents(d.job_id,async evt=>{if(this._jobFailed(evt))return;if(evt.event==='job.completed'){this.sub.close();const job=(await LegalApiClient.getJob(d.job_id)).data;if(job.phase==='requirements')await this._loadRequirements();else await this._loadDraftData();}});}};card.append(b);}this.el.append(card);
+    for(const d of history){const b=document.createElement('button');b.className='btn btn-secondary';b.style.margin='0.5rem';b.textContent=d.title+' · '+d.status;b.onclick=async()=>{this.draftId=d.id;this.jobId=d.job_id;if(['awaiting_information','ready_to_draft','failed','cancelled'].includes(d.status))await this._loadRequirements();else if(['completed','completed_with_warnings'].includes(d.status))await this._loadDraftData();else{this.state=d.status;this.log=[{t:new Date(),msg:'Preparing your draft…'}];this._renderRunning();this.sub?.close();this.sub=LegalApiClient.subscribeJobEvents(d.job_id,async evt=>{if(this._jobFailed(evt))return;if(evt.event==='job.progress'){this.state=evt.data.status;this.log.push({t:new Date(),msg:evt.data.message||'Preparing your draft…'});this._renderRunning();}if(evt.event==='job.completed'){this.sub.close();const job=(await LegalApiClient.getJob(d.job_id)).data;if(job.phase==='requirements')await this._loadRequirements();else await this._loadDraftData();}});}};card.append(b);}this.el.append(card);
   }
 
   _bindSetup() {
     const $ = (s) => this.el.querySelector(s);
+    $('#df-upload').onchange=async e=>{
+      const file=e.target.files[0];if(!file)return;
+      const status=$('#df-upload-status'),button=$('#df-submit');button.disabled=true;e.target.disabled=true;
+      status.textContent='Reading your file…';
+      try{
+        const doc=(await LegalApiClient.uploadDocument(file,{title:file.name,document_type:'case',jurisdiction:this.form.jurisdiction})).data;
+        if(!this.form.supporting_document_ids.includes(doc.id))this.form.supporting_document_ids.push(doc.id);
+        this._saveDraft();window.app?.updateDocBadgeCount();await this._renderSetup();
+        if(this.form.document_type.trim()&&this.form.instructions.trim().length>=5)this.el.querySelector('#df-submit').click();
+        else this.el.querySelector('#df-upload-status').textContent='File attached. Enter the document type and instructions, then create your draft.';
+      }catch(error){status.textContent=error.message;button.disabled=false;e.target.disabled=false;e.target.value='';}
+    };
 
     $('#df-type').addEventListener('input', (e) => { this.form.document_type = e.target.value; this._saveDraft(); });
     $('#df-jur').addEventListener('change', (e) => { this.form.jurisdiction = e.target.value; this._saveDraft(); });
@@ -176,13 +192,14 @@ export class DraftingView {
       this.fieldErrors = {};
       this.form.document_type = this.form.document_type.trim();
       if (this.form.document_type.length < 2) this.fieldErrors.document_type = 'Enter the legal document you want to draft.';
-      if (!this.form.instructions.trim()) this.fieldErrors.instructions = "Instructions are required.";
+      if (this.form.instructions.trim().length<5) this.fieldErrors.instructions = "Describe the draft you need in at least 5 characters.";
 
       if (Object.keys(this.fieldErrors).length) return this._renderSetup();
 
+      this.lastError='';
       const btn = $('#df-submit');
       btn.disabled = true;
-      btn.innerHTML = '<span class="btn-spinner"></span><span>Analyzing</span>';
+      btn.innerHTML = '<span class="btn-spinner"></span><span>Starting draft</span>';
 
       try {
         const payload = { ...this.form, document_type: DOC_TYPES.find(([, label]) => label === this.form.document_type)?.[0] || this.form.document_type };
@@ -211,7 +228,7 @@ export class DraftingView {
   _jobFailed(evt) {
     if(evt.event==='job.failed'||evt.data?.status==='cancelled') {
       this.sub?.close(); this.state='setup';
-      window.showToast?.(evt.data.message||'Drafting task cancelled.','error'); this._renderSetup(); return true;
+      this.lastError=evt.data.message||'Drafting task cancelled.';window.showToast?.(this.lastError,'error'); this._renderSetup(); return true;
     }
     return false;
   }
@@ -222,15 +239,28 @@ export class DraftingView {
       const res = await DraftingApi.getRequirements(this.draftId);
       this.requirements = res.data;
       this._evaluateReadiness();
-      this._renderRequirements();
+      if(this.requirements.some(r=>r.required&&!r.current_answer))return this._renderRequirements();
+      await this._generateFromRequirements();
     } catch (e) {
-      window.showToast?.('Could not load requirements', 'error');
+      this.lastError=e.message||'Could not prepare the draft. Try again.';this.state='setup';await this._renderSetup();
     }
   }
 
   _evaluateReadiness() {
     const allRequiredMet = this.requirements.every(r => !r.required || r.current_answer);
     this.state = allRequiredMet ? 'ready_to_draft' : 'awaiting_information';
+  }
+
+  async _generateFromRequirements(){
+    const gaps=this.requirements.filter(r=>!String(r.current_answer??'').trim());
+    const res=await DraftingApi.generateDraft(this.draftId,{proceed_with_missing_information:gaps.length>0,acknowledged_requirement_ids:gaps.map(r=>r.id)});
+    this.jobId=res.data.job_id;this.state='drafting';this.log=[{t:new Date(),msg:'Preparing your draft; unknown details will be marked in brackets.'}];this._renderRunning();
+    this.sub?.close();
+    this.sub=LegalApiClient.subscribeJobEvents(this.jobId,evt=>{
+      if(this._jobFailed(evt))return;
+      if(evt.event==='job.progress'){this.state=evt.data.status;this.log.push({t:new Date(),msg:evt.data.message});this._renderRunning();}
+      if(evt.event==='job.completed'){this.sub.close();this._loadDraftData();}
+    });
   }
 
   _renderRequirements() {

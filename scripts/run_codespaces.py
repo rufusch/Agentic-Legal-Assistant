@@ -19,7 +19,7 @@ def configure(environment, root=ROOT):
         env.setdefault('LEXIMIND_VERIFIER_LLM_PROVIDER', 'groq')
         env.setdefault('LEXIMIND_VERIFIER_LLM_MODEL', 'openai/gpt-oss-20b')
     name = env.get('CODESPACE_NAME', '')
-    domain = env.get('GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN', '')
+    domain = env.get('GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN') or 'app.github.dev'
     origin = None
     if name and domain:
         if not re.fullmatch(r'[a-zA-Z0-9-]+', name) or not re.fullmatch(r'[a-zA-Z0-9.-]+', domain):

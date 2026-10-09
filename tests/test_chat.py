@@ -86,9 +86,42 @@ def test_chat_grounding_feedback_revocation_idempotency_and_deletion(client):
 def test_chat_incomplete_verification_fails_closed(client):
     c,model=client;model.omit=True;t,_=upload(c);finish(c,t);cid=conversation(c,[t['document_id']])
     _,job,answer=send(c,cid,[t['document_id']])
-    assert job['status']=='failed' and job['failure']['code']=='CHAT_VERIFICATION_FAILED'
+    assert job['status']=='failed' and job['failure']['code']=='MODEL_INVALID_VERIFICATION'
     assert not answer['content'] and not answer['claims'] and not answer['citations']
     assert not c.app.state.store.all('tenant-a','chat_training')
+
+
+def test_document_reader_does_not_fetch_official_sources(client,monkeypatch):
+    c,model=client;t,_=upload(c);finish(c,t)
+    official=c.app.state.official_sources
+    monkeypatch.setattr(official,'enabled',True)
+    def unexpected(*args):raise AssertionError('Document reading must stay within the uploaded file')
+    monkeypatch.setattr(official,'enrich',unexpected)
+    cid=c.post('/api/v1/conversations',json={'title':'Read document','document_ids':[t['document_id']],'settings':{'include_official_sources':False}}).json()['data']['conversation_id']
+    _,job,answer=send(c,cid,[t['document_id']])
+    assert job['status']=='completed_with_warnings'
+    assert answer['claims'] and answer['citations'][0]['document_id']==t['document_id']
+
+
+def test_selected_agreement_precedes_supplemental_authorities(client, monkeypatch):
+    c,model=client
+    selected,_=upload(c);finish(c,selected)
+    supplemental,_=upload(c,text=b'General statutory authority. Payment obligations under applicable legislation.',key='supplemental-upload')
+    finish(c,supplemental)
+    doc=c.app.state.store.get('tenant-a','document',supplemental['document_id'])
+    official=c.app.state.official_sources
+    monkeypatch.setattr(official,'enabled',True)
+    monkeypatch.setattr(official,'enrich',lambda *args:{'enabled':True,'sources':[],'failures':[]})
+    monkeypatch.setattr(official,'current_documents',lambda tenant:[doc])
+    from backend import chat
+    monkeypatch.setattr(chat,'source_budget',lambda *args:100)
+    original=chat.search
+    monkeypatch.setattr(chat,'search',lambda pool,q,n:sorted(original(pool,q,n),key=lambda chunk:chunk['document_id']==selected['document_id']))
+    cid=conversation(c,[selected['document_id']])
+    _,job,answer=send(c,cid,[selected['document_id']])
+    assert job['status']=='completed_with_warnings'
+    assert answer['claims']
+    assert answer['citations'][0]['document_id']==selected['document_id']
 
 
 def test_chat_busy_cancellation_and_restart(tmp_path):
@@ -107,3 +140,45 @@ def test_chat_busy_cancellation_and_restart(tmp_path):
         c.headers['Authorization']='Bearer a';assert wait(c,pending['job_id'])['status']=='completed_with_warnings'
         assert len(c.get(path).json()['data'])==4
     app.state.store.close()
+
+
+def test_reader_paragraph_separates_upload_from_official_law(client):
+    c,model=client;t,_=upload(c);finish(c,t);rid=t['document_id']
+    cid=c.post('/api/v1/conversations',json={'document_ids':[rid],'settings':{'response_format':'document_summary','include_official_sources':False}}).json()['data']['conversation_id']
+    _,job,answer=send(c,cid,[rid])
+    assert job['status']=='completed_with_warnings'
+    assert '\n' not in answer['content']
+    assert not answer['content'].startswith('According to the selected source:')
+    assert 'payment' in answer['content']
+    assert answer['document_evidence']
+    assert answer['legal_sources']==[] and answer['legal_context']==''
+    assert 'certifies' not in answer['content']
+
+
+def test_reader_only_lists_verified_government_authority(client, monkeypatch):
+    from backend import official_sources
+    c,model=client;t,_=upload(c);finish(c,t);rid=t['document_id']
+    url='https://www.indiacode.nic.in/reader-test.pdf'
+    monkeypatch.setattr(official_sources,'fetch',lambda u:(b'%PDF-official-test',url))
+    c.app.state.worker.parser=lambda *args:{'result':{'pages':[{'number':1,'text':'The Payment Act requires payment on the agreed date.'}],'warnings':[]}}
+    service=c.app.state.official_sources
+    monkeypatch.setattr(service,"enabled",True)
+    monkeypatch.setattr(service,'discover',lambda question,limit:[{'title':'Payment Act, 2026','url':url,'document_type':'statute'}])
+    def complete(messages,schema,cancelled=lambda:False):
+        packet=json.loads(messages[-1]['content'])
+        if 'items' in packet:
+            return {'decisions':[{'id':i['id'],'supported':True,'reason':'Source supports statement.'} for i in packet['items']]}
+        doc=next(s['source_id'] for s in packet['sources'] if s['document_type']!='statute')
+        law=next(s['source_id'] for s in packet['sources'] if s['document_type']=='statute')
+        return {'propositions':[
+            {'text':'The contract says payment is due on 15 October.','kind':'fact','source_ids':[doc]},
+            {'text':'The Payment Act requires payment on the agreed date.','kind':'legal','source_ids':[law]},
+            {'text':'Unattributed legal statement.','kind':'legal','source_ids':[law]}]}
+    monkeypatch.setattr(model,'complete',complete)
+    cid=c.post('/api/v1/conversations',json={'document_ids':[rid],'settings':{'response_format':'document_summary','include_official_sources':True}}).json()['data']['conversation_id']
+    _,job,answer=send(c,cid,[rid])
+    assert job['status']=='completed_with_warnings'
+    assert answer['legal_sources'] and all(s['source_url']==url for s in answer['legal_sources'])
+    assert 'Payment Act' in answer['legal_context'] and 'Unattributed' not in answer['legal_context']
+    assert 'Payment Act' not in answer['content']
+    assert all(s['document_id']==rid for s in answer['document_evidence'])

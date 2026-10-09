@@ -1,4 +1,4 @@
-import {createApiClient} from './transport.js';
+import {createApiClient,fileMediaType} from './transport.js';
 export const generateUUID=()=>crypto.randomUUID();
 const baseUrl=window.CASELENS_API_BASE || location.origin;
 const documents=new Map(),citations=new Map(),tickets=new Map();
@@ -40,11 +40,12 @@ export const LegalApiClient={
   async createDocumentUpload(payload){const res=await request('documents/uploads',{method:'POST',body:payload,idempotencyKey:generateUUID()});tickets.set(res.data.document_id,res.data);return res;},
   uploadFileBytes:(url,file)=>transport.request(url,{method:'PUT',body:file,raw:true,headers:{'Content-Type':file.type||mime(file.name)}}),
   completeDocumentUpload:(id,payload)=>request('documents/'+id+'/complete',{method:'POST',body:{...payload,upload_id:payload.upload_id||tickets.get(id)?.upload_id},idempotencyKey:generateUUID()}),
-  async uploadDocument(file,metadata={}){
+  async uploadDocument(file,metadata={},onUploaded){
     const capabilities=(await request('documents/capabilities')).data;
-    if(!capabilities.media_types.includes(file.type||mime(file.name)))throw new Error('This server does not support that file type. Use PDF or DOCX.');
-    if(file.size>capabilities.max_file_bytes)throw new Error('File exceeds the 25 MB limit.');
-    const job=await transport.upload(file,metadata);await this.waitJob(job.job_id);return this.getDocument(job.document_id);
+    if(!file.size)throw new Error('This file is empty. Choose a document containing text or scanned pages.');
+    if(!capabilities.media_types.includes(fileMediaType(file)))throw new Error(file.name.toLowerCase().endsWith('.doc')?'Legacy DOC is unavailable on this server. Save the document as DOCX or PDF and upload it again.':'Unsupported file type. Use PDF, DOCX, TXT, PNG, JPEG or TIFF.');
+    if(file.size>capabilities.max_file_bytes)throw new Error(`File exceeds the ${Math.round(capabilities.max_file_bytes/1024/1024)} MB limit.`);
+    const job=await transport.upload(file,metadata);onUploaded?.(job);await this.waitJob(job.job_id);return this.getDocument(job.document_id);
   },
   async waitJob(id){for(let count=0;count<1800;count++){const res=await this.getJob(id);if(terminal.has(res.data.status)){if(['failed','cancelled'].includes(res.data.status))throw new Error(res.data.failure?.message||'Task '+res.data.status);return res;}await new Promise(r=>setTimeout(r,1000));}throw new Error('Task still running; return to Documents to check its status.');},
   async getCitation(id){

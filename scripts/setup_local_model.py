@@ -1,4 +1,4 @@
-"""Fetch the official Ollama portable CPU runtime without downloading GPU libraries."""
+"""Fetch official portable Ollama; --gpu adds NVIDIA CUDA 12 libraries."""
 import io
 import json
 import os
@@ -56,7 +56,8 @@ def main():
             names = [i.filename for i in archive.infolist()]
             if '--list' in __import__('sys').argv:
                 print(json.dumps(names));return
-            selected = [i for i in archive.infolist() if not i.is_dir() and (i.filename=='ollama.exe' or (i.filename.startswith('lib/ollama/') and not any(p in i.filename.lower() for p in ['cuda','vulkan','rocm','mlx'])))]
+            gpu = '--gpu' in __import__('sys').argv
+            selected = [i for i in archive.infolist() if not i.is_dir() and (i.filename=='ollama.exe' or (i.filename.startswith('lib/ollama/') and (not any(p in i.filename.lower() for p in ['cuda','vulkan','rocm','mlx']) or (gpu and i.filename.startswith('lib/ollama/cuda_v12/')))))]
             for item in selected:
                 target = (destination / item.filename).resolve()
                 if not target.is_relative_to(destination.resolve()): raise RuntimeError('Unexpected archive path')

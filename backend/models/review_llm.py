@@ -116,6 +116,7 @@ class LocalReviewLLM:
     allow_private_http: bool = False
     num_threads: int | None = None
     max_output_tokens: int = 4000
+    context_length: int = 16384
     role: str = 'review'
 
     @classmethod
@@ -138,7 +139,8 @@ class LocalReviewLLM:
             deployment='cloud' if hosted or not local_url else os.getenv('LEXIMIND_MODEL_DEPLOYMENT', 'local'), api_key=key or '',
             allow_private_http=os.getenv('LEXIMIND_MODEL_ALLOW_HTTP') == '1',
             num_threads=int(os.environ['LEXIMIND_MODEL_NUM_THREADS']) if os.getenv('LEXIMIND_MODEL_NUM_THREADS') else None,
-            max_output_tokens=int(os.getenv('LEXIMIND_MODEL_MAX_OUTPUT_TOKENS', '1500' if provider=='groq' and role not in {'verifier','judge'} else '4000')),
+            max_output_tokens=int(os.getenv(f'LEXIMIND_{role.upper()}_MAX_OUTPUT_TOKENS',os.getenv('LEXIMIND_MODEL_MAX_OUTPUT_TOKENS', '1500' if provider=='groq' and role not in {'verifier','judge'} else '4000'))),
+            context_length=int(os.getenv('LEXIMIND_MODEL_CONTEXT_LENGTH','16384')),
             timeout_seconds=int(os.getenv('LEXIMIND_MODEL_TIMEOUT_SECONDS', '900')), role=role)
         values.update(overrides)
         return cls(**values)
@@ -149,6 +151,8 @@ class LocalReviewLLM:
 
     def __post_init__(self):
         url = urlsplit(self.base_url)
+        if not 2048 <= self.context_length <= 131072:
+            raise ValueError('Model context length must be between 2048 and 131072 tokens.')
         if self.num_threads is not None and not 1 <= self.num_threads <= 256:
             raise ValueError('Model thread override must be between 1 and 256.')
         if not 256 <= self.max_output_tokens <= 16000:
@@ -199,10 +203,10 @@ class LocalReviewLLM:
 
     async def _complete(self,messages,schema,cancelled):
         if cancelled(): raise ReviewCancelled()
-        if self.provider=='groq':messages=compact_source_metadata(messages)
+        messages=compact_source_metadata(messages)
         path=self._url('chat')
         if self.provider=='ollama':
-            options={'temperature':0,'num_ctx':16384,'num_predict':self.max_output_tokens}
+            options={'temperature':0,'num_ctx':self.context_length,'num_predict':self.max_output_tokens}
             if self.num_threads is not None: options['num_thread']=self.num_threads
             payload={'model':self.model,'messages':messages,'format':schema,'stream':False,'options':options,'keep_alive':'10m'}
         elif self.provider=='anthropic':

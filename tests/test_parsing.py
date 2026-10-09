@@ -57,3 +57,11 @@ def test_active_pdf_and_encrypted_pdf_are_rejected():
     writer.encrypt('password')
     with pytest.raises(ParseFailure,match='unlocked'):
         extract(raw(writer),'application/pdf')
+def test_upright_scan_keeps_readable_text():
+    from PIL import Image, ImageDraw, ImageFont
+    from backend.parsing import ocr_image
+    image=Image.new('RGB',(1200,180),'white')
+    ImageDraw.Draw(image).text((30,40),'Alpha Ltd pays Beta Ltd INR 5000.',fill='black',font=ImageFont.load_default(size=32))
+    text,quality=ocr_image(image)
+    assert '5000' in text and 'Alpha' in text
+    assert quality>.8

@@ -22,13 +22,13 @@ export class DocumentsHubView {
       <div class="view-header">
         <div class="view-title-group">
           <div class="supplied-29ced55988">
-            <h1>Legal Document Repository</h1>
+            <h1>Your documents</h1>
             
           </div>
-          <p class="view-subtitle">Manage legal matters, executed contracts, scanned annexures, and statutory precedents for grounded AI retrieval.</p>
+          <p class="view-subtitle">Upload a file and wait for Ready. You can then review it or ask questions about it.</p>
         </div>
         <button class="btn btn-primary" id="btn-open-upload-modal">
-          Upload Legal Document
+          Upload document
         </button>
       </div>
 
@@ -43,7 +43,7 @@ export class DocumentsHubView {
         </div>
 
         <div class="supplied-31e31c6579">
-          <input type="text" class="input supplied-c8ce8e207b" id="input-search-docs" placeholder="Search by title, name..." value="${this.searchQuery}" />
+          <input type="text" class="input supplied-c8ce8e207b" id="input-search-docs" placeholder="Search by title, name..." value="${escapeHtml(this.searchQuery)}" />
           <span class="supplied-baa4f14ef3">🔍</span>
         </div>
       </div>
@@ -57,7 +57,7 @@ export class DocumentsHubView {
                 <th class="supplied-0d5984eb4a">Document Name & Title</th>
                 <th class="supplied-35d933f2d9">Type & Jurisdiction</th>
                 <th class="supplied-35d933f2d9">Pages / OCR</th>
-                <th class="supplied-35d933f2d9">Pipeline Status</th>
+                <th class="supplied-35d933f2d9">Status</th>
                 <th class="supplied-35d933f2d9">Date</th>
                 <th class="supplied-8def568bda">Action</th>
               </tr>
@@ -164,6 +164,7 @@ export class DocumentsHubView {
 
           <td class="supplied-35d933f2d9">
             ${statusBadge}
+            ${doc.failure ? `<p role="alert">${escapeHtml(doc.failure.message || 'Processing failed. Try uploading a readable copy.')}</p>` : ''}
           </td>
 
           <td class="supplied-1c77588258">
@@ -171,7 +172,7 @@ export class DocumentsHubView {
           </td>
 
           <td class="supplied-8def568bda">
-            <button class="btn btn-secondary btn-sm btn-inspect-doc" data-doc-id="${doc.id}">
+            <button class="btn btn-secondary btn-sm btn-inspect-doc" data-doc-id="${doc.id}" ${doc.status!=='ready'?'disabled':''}>
               🔍 Inspect Source
             </button>
           </td>
@@ -229,7 +230,7 @@ export class DocumentsHubView {
         <div class="modal-card">
           <div class="modal-header">
             <div class="supplied-a609928111">
-              <h3 class="supplied-6fdd6821ed">Upload Legal Document</h3>
+              <h3 class="supplied-6fdd6821ed">Upload document</h3>
             </div>
             <button class="drawer-close" id="btn-close-modal">&times;</button>
           </div>
@@ -258,7 +259,7 @@ export class DocumentsHubView {
               </div>
 
               <!-- Metadata Form Fields -->
-              <div class="supplied-b1f256fafc">
+              <details class="simple-options"><summary>Document details (optional)</summary><div class="supplied-b1f256fafc">
                 <div>
                   <label class="supplied-9337b8fbdf">Document Title</label>
                   <input type="text" class="input" id="upload-meta-title" placeholder="e.g. Non-Disclosure Agreement" />
@@ -276,8 +277,8 @@ export class DocumentsHubView {
                 <div>
                   <label class="supplied-9337b8fbdf">Jurisdiction</label>
                   <select class="select" id="upload-meta-jurisdiction">
+                    <option value="IN">India</option>
                     <option value="IN-MH">India - Maharashtra (IN-MH)</option>
-                    <option value="IN">India - Federal / Supreme Court (IN)</option>
                     <option value="US-DE">United States - Delaware (US-DE)</option>
                     <option value="UK">United Kingdom (UK)</option>
                   </select>
@@ -286,22 +287,22 @@ export class DocumentsHubView {
                   <label class="supplied-9337b8fbdf">Document Date</label>
                   <input type="text" class="input" id="upload-meta-court" placeholder="Court / authority, if applicable"><input type="date" class="input" id="upload-meta-date"  />
                 </div>
-              </div>
+              </div></details>
             </div>
 
             <!-- Step 2: Upload & Indexing Progress -->
             <div id="upload-step-2" class="supplied-f53458721c">
               <div class="supplied-64a0232d3f"></div>
-              <h4 id="upload-progress-title" class="supplied-5c77fbc64c">Uploading & Initiating Pipeline...</h4>
+              <h4 id="upload-progress-title" class="supplied-5c77fbc64c">Uploading your document…</h4>
               <p id="upload-progress-desc" class="supplied-97dc74091f">
-                Submitting sha256 payload, receiving upload URL, and indexing chunks.
+                Reading your file. It will be ready to use when processing finishes.
               </p>
             </div>
           </div>
 
           <div class="modal-footer" id="modal-footer-btns">
             <button class="btn btn-ghost" id="btn-cancel-modal">Cancel</button>
-            <button class="btn btn-primary" id="btn-submit-upload" disabled>Proceed with Upload</button>
+            <button class="btn btn-primary" id="btn-submit-upload" disabled>Upload</button>
           </div>
         </div>
       </div>
@@ -317,7 +318,9 @@ export class DocumentsHubView {
 
     let selectedFile = null;
 
-    dropzone.addEventListener('click', () => filePicker.click());
+    dropzone.addEventListener('click', e => {if(e.target!==filePicker)filePicker.click();});
+    dropzone.addEventListener('dragover', e=>e.preventDefault());
+    dropzone.addEventListener('drop', e=>{e.preventDefault();if(e.dataTransfer.files.length){filePicker.files=e.dataTransfer.files;filePicker.dispatchEvent(new Event('change',{bubbles:true}));}});
     filePicker.addEventListener('change', (e) => {
       if (e.target.files.length > 0) {
         selectedFile = e.target.files[0];
@@ -325,7 +328,7 @@ export class DocumentsHubView {
         fileNameEl.textContent = selectedFile.name;
         titleInput.value = selectedFile.name.replace(/\.[^/.]+$/, "");
         
-        fileMetaEl.textContent = `Size: ${(selectedFile.size / 1024).toFixed(1)} KB · SHA256 is computed from the file during upload`;
+        fileMetaEl.textContent = `Size: ${(selectedFile.size / 1024).toFixed(1)} KB`;
         btnSubmit.disabled = false;
       }
     });
@@ -336,7 +339,8 @@ export class DocumentsHubView {
 
     // Submit handler (Contract 2.5)
     btnSubmit.addEventListener('click', async () => {
-      if (!selectedFile) return;
+      if (!selectedFile || btnSubmit.disabled) return;
+      btnSubmit.disabled=true;
 
       const step1 = modalContainer.querySelector('#upload-step-1');
       const step2 = modalContainer.querySelector('#upload-step-2');
@@ -359,7 +363,7 @@ export class DocumentsHubView {
         });
         window.app?.updateDocBadgeCount();
 
-        window.showToast("Document registered and queued for indexing", "success");
+        window.showToast("Document parsed and ready", "success");
         setTimeout(async () => {
           modalContainer.innerHTML = '';
           await this.render();
@@ -368,7 +372,8 @@ export class DocumentsHubView {
       } catch (err) {
         console.error(err);
         modalContainer.querySelector('#upload-progress-title').textContent = "Upload Error";
-        modalContainer.querySelector('#upload-progress-desc').textContent = err.error?.message || "Failed to process document upload.";
+        modalContainer.querySelector('#upload-progress-desc').textContent = err.message || err.error?.message || "Failed to process document upload.";
+        step1.style.display='block';footerBtns.style.display='flex';btnSubmit.disabled=false;btnSubmit.textContent='Retry Upload';
       }
     });
   }
